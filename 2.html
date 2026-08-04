@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自定义分形 · 迭代轨迹</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+        body {
+            background:#0a0a12;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            min-height:100vh;
+            font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;
+            overflow:hidden;
+        }
+        .container {
+            background:#12121f;
+            border-radius:20px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.9), inset 0 0 80px rgba(60,30,120,0.1);
+            padding:20px 24px 24px 24px;
+            max-width:98vw;
+            max-height:98vh;
+            border:1px solid rgba(255,255,255,0.04);
+            display:flex;
+            flex-direction:column;
+        }
+        .header {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:14px;
+            flex-wrap:wrap;
+            gap:10px;
+        }
+        .header h1 {
+            color:#e0d8f0;
+            font-size:22px;
+            font-weight:600;
+            letter-spacing:1px;
+            background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);
+            -webkit-background-clip:text;
+            -webkit-text-fill-color:transparent;
+            text-shadow:none;
+        }
+        .header-controls {
+            display:flex;
+            align-items:center;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+        .info-badge {
+            color:#9ca3cf;
+            font-size:13px;
+            background:rgba(255,255,255,0.04);
+            padding:5px 14px;
+            border-radius:30px;
+            border:1px solid rgba(255,255,255,0.06);
+            font-variant-numeric:tabular-nums;
+            white-space:nowrap;
+        }
+        .info-badge span { color:#c8d0ff; font-weight:500; }
+        .btn {
+            background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.08);
+            color:#c8d0ff;
+            padding:5px 16px;
+            border-radius:30px;
+            cursor:pointer;
+            font-size:13px;
+            transition:all 0.2s ease;
+            font-weight:500;
+            backdrop-filter:blur(4px);
+        }
+        .btn:hover { background:rgba(167,139,250,0.2); border-color:rgba(167,139,250,0.3); color:#fff; transform:scale(1.03); }
+        .btn:active { transform:scale(0.96); }
+        .canvas-wrapper {
+            position:relative;
+            border-radius:12px;
+            overflow:hidden;
+            background:#0a0a12;
+            box-shadow:inset 0 0 60px rgba(0,0,0,0.6);
+            border:1px solid rgba(255,255,255,0.05);
+            flex-shrink:0;
+        }
+        canvas {
+            display:block;
+            width:100%;
+            height:auto;
+            cursor:grab;
+            touch-action:none;
+            background:#0a0a12;
+        }
+        canvas:active { cursor:grabbing; }
+        .footer-info {
+            margin-top:12px;
+            display:flex;
+            flex-wrap:wrap;
+            gap:6px 14px;
+            font-size:12px;
+            color:#6b7299;
+            align-items:baseline;
+        }
+        .footer-info .coords {
+            color:#8b93c0;
+            font-family:'JetBrains Mono','Consolas',monospace;
+            font-size:12px;
+            letter-spacing:0.3px;
+            white-space:nowrap;
+        }
+        .footer-info .coords strong { color:#a8b0e0; font-weight:500; }
+        .footer-info .hint {
+            color:#5a6188;
+            font-size:12px;
+            margin-left:auto;
+            white-space:nowrap;
+        }
+        .footer-info .hint kbd {
+            background:rgba(255,255,255,0.06);
+            padding:1px 10px;
+            border-radius:4px;
+            border:1px solid rgba(255,255,255,0.06);
+            font-size:11px;
+            color:#8b93c0;
+            font-family:inherit;
+        }
+        .iter-detail {
+            width:100%;
+            font-family:'JetBrains Mono','Consolas',monospace;
+            font-size:12px;
+            color:#9aa3c8;
+            background:rgba(255,255,255,0.03);
+            padding:6px 12px;
+            border-radius:8px;
+            border:1px solid rgba(255,255,255,0.04);
+            margin-top:2px;
+            word-break:break-all;
+            line-height:1.5;
+            min-height:28px;
+        }
+        .iter-detail .label { color:#6b7299; margin-right:8px; }
+        .iter-detail .iter-value { color:#c8d0ff; }
+        .iter-detail .divider { color:#4a5270; margin:0 4px; }
+        .equation-panel {
+            display:flex;
+            flex-wrap:wrap;
+            align-items:center;
+            gap:8px 12px;
+            background:rgba(255,255,255,0.03);
+            border-radius:12px;
+            padding:8px 12px;
+            margin-top:6px;
+            border:1px solid rgba(255,255,255,0.05);
+        }
+        .equation-panel label {
+            color:#9ca3cf;
+            font-size:12px;
+            white-space:nowrap;
+        }
+        .equation-panel select, .equation-panel input {
+            background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.08);
+            color:#e0d8f0;
+            padding:4px 10px;
+            border-radius:6px;
+            font-size:12px;
+            font-family:'JetBrains Mono','Consolas',monospace;
+            outline:none;
+            transition:border 0.2s;
+            min-width:80px;
+        }
+        .equation-panel select:focus, .equation-panel input:focus {
+            border-color:#a78bfa;
+        }
+        .equation-panel input[type="text"] {
+            width:140px;
+        }
+        .equation-panel input[type="number"] {
+            width:70px;
+        }
+        .equation-panel .expr-group {
+            display:flex;
+            align-items:center;
+            gap:4px;
+            flex-wrap:wrap;
+        }
+        .equation-panel .expr-group span {
+            color:#6b7299;
+            font-size:12px;
+        }
+        .equation-panel .btn-apply {
+            background:#a78bfa;
+            color:#0a0a12;
+            border:none;
+            padding:4px 14px;
+            border-radius:30px;
+            font-weight:600;
+            cursor:pointer;
+            font-size:12px;
+            transition:background 0.2s;
+        }
+        .equation-panel .btn-apply:hover { background:#c4b5fd; }
+        .equation-panel .checkbox-group {
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+        .equation-panel .checkbox-group input[type="checkbox"] {
+            width:16px;
+            height:16px;
+            accent-color:#a78bfa;
+            cursor:pointer;
+        }
+        @media (max-width:700px) {
+            .container { padding:12px 14px 16px 14px; border-radius:14px; }
+            .header h1 { font-size:17px; }
+            .info-badge { font-size:11px; padding:4px 10px; }
+            .btn { font-size:11px; padding:4px 12px; }
+            .footer-info { font-size:10px; flex-direction:column; align-items:stretch; gap:4px; }
+            .footer-info .hint { margin-left:0; text-align:right; }
+            .iter-detail { font-size:10px; padding:4px 10px; }
+            .equation-panel { flex-direction:column; align-items:stretch; gap:6px; }
+            .equation-panel input[type="text"] { width:100%; }
+            .equation-panel input[type="number"] { width:60px; }
+        }
+        ::-webkit-scrollbar { display:none; }
+        .rendering-overlay {
+            position:absolute;
+            top:0; left:0; right:0; bottom:0;
+            background:rgba(10,10,18,0.7);
+            backdrop-filter:blur(3px);
+            display:none;
+            align-items:center;
+            justify-content:center;
+            border-radius:12px;
+            pointer-events:none;
+            z-index:10;
+        }
+        .rendering-overlay.active { display:flex; }
+        .rendering-overlay .spinner {
+            width:36px; height:36px;
+            border:3px solid rgba(167,139,250,0.15);
+            border-top-color:#a78bfa;
+            border-radius:50%;
+            animation:spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>✦ 自定义分形 · 迭代轨迹</h1>
+        <div class="header-controls">
+            <div class="info-badge">🔍 <span id="zoomLevel">1.00×</span></div>
+            <div class="info-badge">⚡ <span id="iterDisplay">100</span></div>
+            <button class="btn" id="resetBtn">⟲ 重置</button>
+        </div>
+    </div>
+    <!-- 方程面板 -->
+    <div class="equation-panel" id="equationPanel">
+        <div class="expr-group">
+            <label>预设</label>
+            <select id="presetSelect">
+                <option value="mandelbrot">曼德勃罗集</option>
+                <option value="julia">朱利亚集 (c=-0.7+0.27i)</option>
+                <option value="burning">燃烧船 (标准)</option>
+                <option value="cubic">三次方</option>
+                <option value="quartic">四次方</option>
+                <option value="quintic">五次方</option>
+                <option value="tricorn">Tricorn (Mandelbar)</option>
+            </select>
+        </div>
+        <div class="expr-group">
+            <span>z<sub>n+1</sub> 实部 =</span>
+            <input type="text" id="exprZr" value="zr*zr - zi*zi + cr" spellcheck="false">
+        </div>
+        <div class="expr-group">
+            <span>虚部 =</span>
+            <input type="text" id="exprZi" value="2*zr*zi + ci" spellcheck="false">
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="fixedC">
+            <label for="fixedC" style="font-size:12px;">固定 c (Julia模式)</label>
+        </div>
+        <div class="expr-group" id="cInputs">
+            <span>c =</span>
+            <input type="number" id="cReal" value="-0.7" step="0.01">
+            <span>+</span>
+            <input type="number" id="cImag" value="0.27" step="0.01">
+            <span>i</span>
+        </div>
+        <button class="btn-apply" id="applyBtn">应用</button>
+    </div>
+
+    <div class="canvas-wrapper">
+        <canvas id="mandelbrot"></canvas>
+        <div class="rendering-overlay" id="renderingOverlay"><div class="spinner"></div></div>
+    </div>
+    <div class="footer-info">
+        <div class="coords">
+            <span>中心: </span><strong id="centerDisplay">-0.5000 + 0.0000i</strong>
+            &nbsp;·&nbsp; 范围: <strong id="rangeDisplay">3.0000</strong>
+        </div>
+        <div class="coords" id="hoverDisplay" style="color:#5a6188;">🖱 悬停查看坐标</div>
+        <div class="hint"><kbd>点击</kbd> 放大 · <kbd>滚轮</kbd> 缩放 · <kbd>拖拽</kbd> 平移</div>
+        <div class="iter-detail" id="iterDetail">
+            <span class="label">迭代轨迹 (z₀=0) :</span>
+            <span style="color:#5a6188;">悬停画布查看</span>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // ─── DOM ──────────────────────────────────────────────────────
+    const canvas = document.getElementById('mandelbrot');
+    const ctx = canvas.getContext('2d');
+    const zoomLevelEl = document.getElementById('zoomLevel');
+    const iterDisplayEl = document.getElementById('iterDisplay');
+    const centerDisplayEl = document.getElementById('centerDisplay');
+    const rangeDisplayEl = document.getElementById('rangeDisplay');
+    const hoverDisplayEl = document.getElementById('hoverDisplay');
+    const iterDetailEl = document.getElementById('iterDetail');
+    const resetBtn = document.getElementById('resetBtn');
+    const overlay = document.getElementById('renderingOverlay');
+    const presetSelect = document.getElementById('presetSelect');
+    const exprZrInput = document.getElementById('exprZr');
+    const exprZiInput = document.getElementById('exprZi');
+    const fixedCCheck = document.getElementById('fixedC');
+    const cRealInput = document.getElementById('cReal');
+    const cImagInput = document.getElementById('cImag');
+    const applyBtn = document.getElementById('applyBtn');
+
+    // ─── 离屏Canvas ──────────────────────────────────────────────
+    const offscreenCanvas = document.createElement('canvas');
+    const offCtx = offscreenCanvas.getContext('2d');
+
+    // ─── 状态 ─────────────────────────────────────────────────────
+    const state = {
+        cx: -0.5, cy: 0, zoom: 1.0, maxIter: 100,
+        fixedC: false,
+        cReal: -0.7, cImag: 0.27,
+        exprZrStr: 'zr*zr - zi*zi + cr',
+        exprZiStr: '2*zr*zi + ci',
+        iterFunc: null
+    };
+
+    const INITIAL = { cx: -0.5, cy: 0, zoom: 1.0 };
+
+    let W = 0, H = 0, pixelRatio = 1;
+    let isMouseOver = false;
+    let lastMouseX = null, lastMouseY = null;
+    let isDragging = false;
+    let abortRender = false;
+    let renderPending = false;
+    let clickTimeout = null;
+
+    // ─── 预设 ─────────────────────────────────────────────────────
+    const PRESETS = {
+        mandelbrot: {
+            exprZr: 'zr*zr - zi*zi + cr',
+            exprZi: '2*zr*zi + ci',
+            fixedC: false,
+            cReal: 0, cImag: 0
+        },
+        julia: {
+            exprZr: 'zr*zr - zi*zi + cr',
+            exprZi: '2*zr*zi + ci',
+            fixedC: true,
+            cReal: -0.7, cImag: 0.27
+        },
+        burning: {
+            exprZr: 'Math.abs(zr)*Math.abs(zr) - Math.abs(zi)*Math.abs(zi) + cr',
+            exprZi: '2*Math.abs(zr)*Math.abs(zi) + ci',
+            fixedC: false,
+            cReal: 0, cImag: 0
+        },
+        cubic: {
+            exprZr: 'zr*zr*zr - 3*zr*zi*zi + cr',
+            exprZi: '3*zr*zr*zi - zi*zi*zi + ci',
+            fixedC: false,
+            cReal: 0, cImag: 0
+        },
+        quartic: {
+            exprZr: 'zr*zr*zr*zr - 6*zr*zr*zi*zi + zi*zi*zi*zi + cr',
+            exprZi: '4*zr*zr*zr*zi - 4*zr*zi*zi*zi + ci',
+            fixedC: false,
+            cReal: 0, cImag: 0
+        },
+        quintic: {
+            exprZr: 'zr*zr*zr*zr*zr - 10*zr*zr*zr*zi*zi + 5*zr*zi*zi*zi*zi + cr',
+            exprZi: '5*zr*zr*zr*zr*zi - 10*zr*zr*zi*zi*zi + zi*zi*zi*zi*zi + ci',
+            fixedC: false,
+            cReal: 0, cImag: 0
+        },
+        tricorn: {
+            exprZr: 'zr*zr - zi*zi + cr',
+            exprZi: '-2*zr*zi + ci',
+            fixedC: false,
+            cReal: 0, cImag: 0
+        }
+    };
+
+    // ─── 编译迭代函数 ────────────────────────────────────────────
+    function compileIterFunc(zrExpr, ziExpr) {
+        const src = `
+            "use strict";
+            return (function(zr, zi, cr, ci) {
+                let zr_new = (${zrExpr});
+                let zi_new = (${ziExpr});
+                return [zr_new, zi_new];
+            });
+        `;
+        try {
+            const fn = new Function(src)();
+            return fn;
+        } catch(e) {
+            console.error('编译方程失败:', e);
+            return null;
+        }
+    }
+
+    function updateIterFunc() {
+        const fn = compileIterFunc(state.exprZrStr, state.exprZiStr);
+        if (fn) {
+            state.iterFunc = fn;
+            return true;
+        }
+        return false;
+    }
+
+    // ─── 尺寸管理 ────────────────────────────────────────────────
+    function resizeCanvas() {
+        const wrapper = canvas.parentElement;
+        const rect = wrapper.getBoundingClientRect();
+        const availW = rect.width || window.innerWidth - 60;
+        const availH = window.innerHeight - 300;
+        let maxW = Math.min(availW, 1400);
+        let maxH = Math.min(availH, 900);
+        let ratio = 4/3;
+        let w = maxW, h = w/ratio;
+        if (h > maxH) { h = maxH; w = h*ratio; }
+        w = Math.max(w, 400); h = Math.max(h, 300);
+        const dpr = Math.min(window.devicePixelRatio||1, 2);
+        const targetPixels = w*h*dpr*dpr;
+        let finalDpr = dpr;
+        if (targetPixels > 4_000_000) {
+            finalDpr = Math.sqrt(4_000_000/(w*h));
+            finalDpr = Math.max(1, finalDpr);
+        }
+        pixelRatio = finalDpr;
+        W = Math.round(w*pixelRatio);
+        H = Math.round(h*pixelRatio);
+        canvas.width = W; canvas.height = H;
+        canvas.style.width = w+'px'; canvas.style.height = h+'px';
+        offscreenCanvas.width = W; offscreenCanvas.height = H;
+        updateInfo();
+    }
+
+    // ─── 坐标转换 ────────────────────────────────────────────────
+    function screenToComplex(sx, sy) {
+        const aspect = W/H;
+        const rangeX = 3.0/state.zoom;
+        const rangeY = rangeX/aspect;
+        const x = state.cx + (sx/W - 0.5)*rangeX;
+        const y = state.cy - (sy/H - 0.5)*rangeY;
+        return { x, y };
+    }
+    function complexToScreen(cx, cy) {
+        const aspect = W/H;
+        const rangeX = 3.0/state.zoom;
+        const rangeY = rangeX/aspect;
+        const sx = ((cx - state.cx)/rangeX + 0.5)*W;
+        const sy = ((state.cy - cy)/rangeY + 0.5)*H;
+        return { x: sx, y: sy };
+    }
+
+    // ─── 迭代计算（用于轨迹）─────────────────────────────────────
+    function computeIterations(cx, cy, maxSteps=10) {
+        const fn = state.iterFunc;
+        if (!fn) return [{r:0, i:0}];
+        let zr, zi, cr, ci;
+        if (state.fixedC) {
+            // Julia: 初始z为像素坐标，c固定
+            zr = cx;
+            zi = cy;
+            cr = state.cReal;
+            ci = state.cImag;
+        } else {
+            zr = 0;
+            zi = 0;
+            cr = cx;
+            ci = cy;
+        }
+        const steps = [{r:zr, i:zi}];
+        for (let n=1; n<=maxSteps; n++) {
+            try {
+                const [nzr, nzi] = fn(zr, zi, cr, ci);
+                zr = nzr; zi = nzi;
+                steps.push({r:zr, i:zi});
+                if (zr*zr + zi*zi > 4.0) break;
+            } catch(e) {
+                break;
+            }
+        }
+        return steps;
+    }
+
+    function formatComplex(r, i, d=4) {
+        const rStr = r.toFixed(d);
+        const iAbs = Math.abs(i).toFixed(d);
+        const sign = i>=0 ? '+' : '-';
+        return `${rStr} ${sign} ${iAbs}i`;
+    }
+
+    // ─── 绘制迭代轨迹 ────────────────────────────────────────────
+    function drawIterationPath(mx, my) {
+        if (isDragging) {
+            ctx.drawImage(offscreenCanvas, 0, 0);
+            return;
+        }
+        ctx.drawImage(offscreenCanvas, 0, 0);
+        if (mx === null || my === null) return;
+        const c = screenToComplex(mx, my);
+        const steps = computeIterations(c.x, c.y, 10);
+        if (steps.length < 2) return;
+        const points = steps.map(p => complexToScreen(p.r, p.i));
+        // 线段
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i=1; i<points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = 'rgba(251,191,36,0.6)';
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        // 圆点
+        for (let i=0; i<points.length; i++) {
+            const p = points[i];
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4, 0, 2*Math.PI);
+            ctx.fillStyle = i===0 ? '#60a5fa' : '#fcd34d';
+            ctx.shadowColor = 'rgba(255,255,255,0.3)';
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.font = '10px monospace';
+            ctx.fillStyle = '#e0e7ff';
+            ctx.fillText(i, p.x+6, p.y-6);
+        }
+        ctx.beginPath();
+        ctx.arc(points[0].x, points[0].y, 6, 0, 2*Math.PI);
+        ctx.strokeStyle = '#60a5fa';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 更新文本
+        let html = '<span class="label">迭代轨迹 (z₀) :</span> ';
+        for (let i=0; i<steps.length; i++) {
+            const s = steps[i];
+            const formatted = formatComplex(s.r, s.i, 3);
+            html += `<span class="iter-value">z<sub>${i}</sub> = ${formatted}</span>`;
+            if (i < steps.length-1) html += '<span class="divider"> → </span>';
+        }
+        if (steps.length <= 1) html += '<span style="color:#5a6188;">（未迭代）</span>';
+        else if (steps.length < 11) html += ' <span style="color:#5a6188;">（已发散）</span>';
+        iterDetailEl.innerHTML = html;
+    }
+
+    // ─── 渲染分形 ────────────────────────────────────────────────
+    function render() {
+        if (renderPending) return;
+        renderPending = true;
+        abortRender = false;
+        overlay.classList.add('active');
+        requestAnimationFrame(() => {
+            setTimeout(() => doRender(), 20);
+        });
+    }
+
+    function doRender() {
+        const fn = state.iterFunc;
+        if (!fn) {
+            offCtx.fillStyle = '#0a0a12';
+            offCtx.fillRect(0, 0, W, H);
+            offCtx.fillStyle = '#ff6b6b';
+            offCtx.font = '20px sans-serif';
+            offCtx.textAlign = 'center';
+            offCtx.fillText('方程编译错误，请检查表达式', W/2, H/2);
+            ctx.drawImage(offscreenCanvas, 0, 0);
+            renderPending = false;
+            overlay.classList.remove('active');
+            return;
+        }
+
+        const imageData = offCtx.createImageData(W, H);
+        const data = imageData.data;
+        const aspect = W/H;
+        const rangeX = 3.0/state.zoom;
+        const rangeY = rangeX/aspect;
+
+        const baseIter = 80;
+        const zoomFactor = Math.log2(state.zoom+1);
+        let maxIter = Math.floor(baseIter + 160*zoomFactor);
+        maxIter = Math.max(40, Math.min(1200, maxIter));
+        state.maxIter = maxIter;
+        iterDisplayEl.textContent = maxIter;
+
+        const maxIterNum = maxIter;
+        const cx = state.cx, cy = state.cy;
+        const rX = rangeX, rY = rangeY;
+        const w = W, h = H;
+        const dataArr = data;
+        const stepX = rX/w, stepY = rY/h;
+        const startX = cx - rX/2;
+        const startY = cy + rY/2;
+
+        function getColor(t) {
+            const hue = 240 - t*240;
+            const sat = 85 + t*15;
+            const lig = 18 + t*52;
+            return hslToRgb(hue/360, sat/100, lig/100);
+        }
+        function hslToRgb(h,s,l) {
+            let r,g,b;
+            if (s===0) { r=g=b=l; }
+            else {
+                const hue2rgb = (p,q,t) => {
+                    if (t<0) t+=1; if (t>1) t-=1;
+                    if (t<1/6) return p+(q-p)*6*t;
+                    if (t<1/2) return q;
+                    if (t<2/3) return p+(q-p)*(2/3-t)*6;
+                    return p;
+                };
+                const q = l<0.5 ? l*(1+s) : l+s-l*s;
+                const p = 2*l-q;
+                r = hue2rgb(p,q,h+1/3);
+                g = hue2rgb(p,q,h);
+                b = hue2rgb(p,q,h-1/3);
+            }
+            return [r*255, g*255, b*255];
+        }
+
+        let zr, zi, cr, ci;
+        let iter, smoothVal;
+
+        for (let py=0; py<h; py++) {
+            if (abortRender) {
+                renderPending = false;
+                overlay.classList.remove('active');
+                return;
+            }
+            const rowOffset = py*w*4;
+            const ciVal = startY - py*stepY;
+            for (let px=0; px<w; px++) {
+                const crVal = startX + px*stepX;
+
+                // 根据模式设置初始z和c
+                if (state.fixedC) {
+                    // Julia: z = 像素坐标, c固定
+                    zr = crVal;
+                    zi = ciVal;
+                    cr = state.cReal;
+                    ci = state.cImag;
+                } else {
+                    // Mandelbrot类型: z=0, c=像素坐标
+                    zr = 0;
+                    zi = 0;
+                    cr = crVal;
+                    ci = ciVal;
+                }
+
+                iter = 0;
+                while (iter < maxIterNum) {
+                    try {
+                        const [nzr, nzi] = fn(zr, zi, cr, ci);
+                        zr = nzr; zi = nzi;
+                        iter++;
+                        if (zr*zr + zi*zi > 4.0) break;
+                    } catch(e) {
+                        break;
+                    }
+                }
+
+                const idx = rowOffset + px*4;
+                if (iter === maxIterNum || iter === 0) {
+                    dataArr[idx]=0; dataArr[idx+1]=0; dataArr[idx+2]=0; dataArr[idx+3]=255;
+                    continue;
+                }
+                const log_zn = Math.log(zr*zr+zi*zi)/2;
+                let nu = Math.log(log_zn/Math.log(2))/Math.log(2);
+                if (!isFinite(nu)||isNaN(nu)) nu=0;
+                smoothVal = iter + 1 - nu;
+                const t = Math.min(1, Math.max(0, smoothVal/maxIterNum));
+                const [r,g,b] = getColor(t);
+                dataArr[idx]=Math.round(r); dataArr[idx+1]=Math.round(g);
+                dataArr[idx+2]=Math.round(b); dataArr[idx+3]=255;
+            }
+        }
+
+        offCtx.putImageData(imageData, 0, 0);
+        ctx.drawImage(offscreenCanvas, 0, 0);
+
+        renderPending = false;
+        overlay.classList.remove('active');
+        updateInfo();
+
+        if (isMouseOver && !isDragging && lastMouseX!==null && lastMouseY!==null) {
+            drawIterationPath(lastMouseX, lastMouseY);
+        }
+    }
+
+    // ─── 更新信息 ────────────────────────────────────────────────
+    function updateInfo() {
+        const aspect = W/H;
+        const rangeX = 3.0/state.zoom;
+        const rangeY = rangeX/aspect;
+        const range = Math.max(rangeX, rangeY);
+        zoomLevelEl.textContent = state.zoom.toFixed(2)+'×';
+        centerDisplayEl.textContent =
+            state.cx.toFixed(4)+(state.cy>=0?' + ':' - ')+Math.abs(state.cy).toFixed(4)+'i';
+        rangeDisplayEl.textContent = range.toFixed(4);
+        iterDisplayEl.textContent = state.maxIter;
+    }
+
+    // ─── 应用方程 ────────────────────────────────────────────────
+    function applyEquation() {
+        const zrStr = exprZrInput.value.trim();
+        const ziStr = exprZiInput.value.trim();
+        if (!zrStr || !ziStr) {
+            alert('请填写实部和虚部表达式');
+            return;
+        }
+        state.exprZrStr = zrStr;
+        state.exprZiStr = ziStr;
+        state.fixedC = fixedCCheck.checked;
+        state.cReal = parseFloat(cRealInput.value) || 0;
+        state.cImag = parseFloat(cImagInput.value) || 0;
+        if (!updateIterFunc()) {
+            alert('方程编译失败，请检查语法');
+            return;
+        }
+        render();
+    }
+
+    // ─── 预设切换 ────────────────────────────────────────────────
+    function loadPreset(name) {
+        const p = PRESETS[name];
+        if (!p) return;
+        exprZrInput.value = p.exprZr;
+        exprZiInput.value = p.exprZi;
+        fixedCCheck.checked = p.fixedC;
+        cRealInput.value = p.cReal;
+        cImagInput.value = p.cImag;
+        // 更新禁用状态
+        cRealInput.disabled = !p.fixedC;
+        cImagInput.disabled = !p.fixedC;
+        applyEquation();
+    }
+
+    // ─── 交互事件 ────────────────────────────────────────────────
+    canvas.addEventListener('mouseenter', () => { isMouseOver = true; });
+    canvas.addEventListener('mouseleave', () => {
+        isMouseOver = false;
+        lastMouseX = null; lastMouseY = null;
+        ctx.drawImage(offscreenCanvas, 0, 0);
+        hoverDisplayEl.textContent = '🖱 悬停查看坐标';
+        iterDetailEl.innerHTML = `
+            <span class="label">迭代轨迹 (z₀) :</span>
+            <span style="color:#5a6188;">悬停画布查看</span>
+        `;
+    });
+
+    let dragStartX, dragStartY, dragStartCx, dragStartCy;
+
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width/rect.width;
+        const scaleY = canvas.height/rect.height;
+        const mx = (e.clientX - rect.left)*scaleX;
+        const my = (e.clientY - rect.top)*scaleY;
+        isDragging = true;
+        dragStartX = mx; dragStartY = my;
+        dragStartCx = state.cx; dragStartCy = state.cy;
+        canvas.style.cursor = 'grabbing';
+        ctx.drawImage(offscreenCanvas, 0, 0);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width/rect.width;
+        const scaleY = canvas.height/rect.height;
+        const mx = (e.clientX - rect.left)*scaleX;
+        const my = (e.clientY - rect.top)*scaleY;
+        lastMouseX = mx; lastMouseY = my;
+        isMouseOver = true;
+        const c = screenToComplex(mx, my);
+        hoverDisplayEl.textContent = `🖱 (${c.x.toFixed(6)}, ${c.y.toFixed(6)})`;
+
+        if (isDragging) {
+            const dx = mx - dragStartX;
+            const dy = my - dragStartY;
+            const aspect = W/H;
+            const rangeX = 3.0/state.zoom;
+            const rangeY = rangeX/aspect;
+            state.cx = dragStartCx - dx/W*rangeX;
+            state.cy = dragStartCy + dy/H*rangeY;
+            updateInfo();
+            clearTimeout(clickTimeout);
+            clickTimeout = setTimeout(() => {
+                if (!abortRender) render();
+            }, 30);
+        } else {
+            drawIterationPath(mx, my);
+        }
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        canvas.style.cursor = 'grab';
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width/rect.width;
+        const scaleY = canvas.height/rect.height;
+        const mx = (e.clientX - rect.left)*scaleX;
+        const my = (e.clientY - rect.top)*scaleY;
+        if (Math.abs(mx - dragStartX) < 3 && Math.abs(my - dragStartY) < 3) {
+            const c = screenToComplex(mx, my);
+            state.cx = c.x; state.cy = c.y;
+            state.zoom *= 2.0;
+            if (state.zoom > 1e12) state.zoom = 1e12;
+            render();
+        } else {
+            clearTimeout(clickTimeout);
+            if (!abortRender) render();
+        }
+    });
+
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width/rect.width;
+        const scaleY = canvas.height/rect.height;
+        const mx = (e.clientX - rect.left)*scaleX;
+        const my = (e.clientY - rect.top)*scaleY;
+        const c = screenToComplex(mx, my);
+        const delta = e.deltaY>0 ? 0.9 : 1.1;
+        const newZoom = state.zoom*delta;
+        if (newZoom<0.000001 || newZoom>1e12) return;
+        const aspect = W/H;
+        const oldRangeX = 3.0/state.zoom;
+        const oldRangeY = oldRangeX/aspect;
+        const newRangeX = 3.0/newZoom;
+        const newRangeY = newRangeX/aspect;
+        const tX = (mx/W-0.5);
+        const tY = -(my/H-0.5);
+        state.cx = c.x - tX*newRangeX;
+        state.cy = c.y - tY*newRangeY;
+        state.zoom = newZoom;
+        updateInfo();
+        render();
+    }, { passive: false });
+
+    // ─── 重置 ─────────────────────────────────────────────────────
+    resetBtn.addEventListener('click', () => {
+        state.cx = INITIAL.cx; state.cy = INITIAL.cy; state.zoom = INITIAL.zoom;
+        loadPreset('mandelbrot');
+    });
+    document.addEventListener('keydown', (e) => { if (e.key==='r'||e.key==='R') resetBtn.click(); });
+
+    // ─── 窗口自适应 ──────────────────────────────────────────────
+    let resizeTimeout = null;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            const oldW=W, oldH=H;
+            resizeCanvas();
+            if (W!==oldW || H!==oldH) render();
+        }, 150);
+    });
+
+    // ─── 触摸支持 ────────────────────────────────────────────────
+    let touchStartX=0, touchStartY=0, touchStartCx=0, touchStartCy=0, isTouching=false, touchDist=0;
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        if (!touch) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width/rect.width;
+        const scaleY = canvas.height/rect.height;
+        const mx = (touch.clientX - rect.left)*scaleX;
+        const my = (touch.clientY - rect.top)*scaleY;
+        if (e.touches.length===1) {
+            isTouching = true;
+            touchStartX = mx; touchStartY = my;
+            touchStartCx = state.cx; touchStartCy = state.cy;
+        } else if (e.touches.length===2) {
+            const t1=e.touches[0], t2=e.touches[1];
+            const dx=t1.clientX-t2.clientX, dy=t1.clientY-t2.clientY;
+            touchDist = Math.sqrt(dx*dx+dy*dy);
+        }
+    }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (e.touches.length===1 && isTouching) {
+            const touch=e.touches[0];
+            const rect=canvas.getBoundingClientRect();
+            const scaleX=canvas.width/rect.width;
+            const scaleY=canvas.height/rect.height;
+            const mx=(touch.clientX - rect.left)*scaleX;
+            const my=(touch.clientY - rect.top)*scaleY;
+            const dx=mx-touchStartX, dy=my-touchStartY;
+            const aspect=W/H;
+            const rangeX=3.0/state.zoom;
+            const rangeY=rangeX/aspect;
+            state.cx = touchStartCx - dx/W*rangeX;
+            state.cy = touchStartCy + dy/H*rangeY;
+            updateInfo();
+            clearTimeout(clickTimeout);
+            clickTimeout = setTimeout(() => { if (!abortRender) render(); }, 30);
+        } else if (e.touches.length===2) {
+            const t1=e.touches[0], t2=e.touches[1];
+            const dx=t1.clientX-t2.clientX, dy=t1.clientY-t2.clientY;
+            const newDist=Math.sqrt(dx*dx+dy*dy);
+            if (touchDist>0) {
+                const scale = newDist/touchDist;
+                const newZoom = state.zoom/scale;
+                if (newZoom>0.000001 && newZoom<1e12) {
+                    state.zoom = newZoom;
+                    updateInfo();
+                    render();
+                }
+            }
+            touchDist = newDist;
+        }
+    }, { passive: false });
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        if (isTouching) { isTouching=false; clearTimeout(clickTimeout); if (!abortRender) render(); }
+        touchDist=0;
+    }, { passive: false });
+
+    // ─── 事件绑定 ────────────────────────────────────────────────
+    presetSelect.addEventListener('change', (e) => {
+        loadPreset(e.target.value);
+    });
+    applyBtn.addEventListener('click', applyEquation);
+    exprZrInput.addEventListener('keydown', (e) => { if (e.key==='Enter') applyEquation(); });
+    exprZiInput.addEventListener('keydown', (e) => { if (e.key==='Enter') applyEquation(); });
+    fixedCCheck.addEventListener('change', () => {
+        const disabled = !fixedCCheck.checked;
+        cRealInput.disabled = disabled;
+        cImagInput.disabled = disabled;
+    });
+    // 初始化禁用状态
+    cRealInput.disabled = true;
+    cImagInput.disabled = true;
+
+    // ─── 初始化 ──────────────────────────────────────────────────
+    function init() {
+        resizeCanvas();
+        loadPreset('mandelbrot');
+        state.cx = INITIAL.cx; state.cy = INITIAL.cy; state.zoom = INITIAL.zoom;
+        updateInfo();
+        render();
+        hoverDisplayEl.textContent = '🖱 悬停查看坐标';
+        iterDetailEl.innerHTML = `
+            <span class="label">迭代轨迹 (z₀) :</span>
+            <span style="color:#5a6188;">悬停画布查看</span>
+        `;
+    }
+    if (document.readyState === 'complete') init();
+    else window.addEventListener('load', init);
+
+    window.__fractal = { state, render, reset: ()=>resetBtn.click(), loadPreset };
+})();
+</script>
+</body>
+</html>

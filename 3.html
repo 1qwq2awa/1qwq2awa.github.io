@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔥 营销号生成器 · 三模式随机</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+            background: linear-gradient(145deg, #fdf6e3 0%, #fff9ef 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            max-width: 860px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 48px 48px 40px 40px;
+            padding: 40px 36px 48px;
+            box-shadow: 0 20px 60px rgba(180, 80, 20, 0.15), 0 8px 24px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 215, 100, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 34px;
+        }
+
+        .header-badge {
+            display: inline-block;
+            background: #ff6b00;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            padding: 4px 18px;
+            border-radius: 40px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #e84c00, #ff8c00, #ffd000);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            animation: shimmer 4s ease-in-out infinite;
+            line-height: 1.2;
+        }
+
+        @keyframes shimmer {
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .header p {
+            color: #7a5a3a;
+            font-size: 16px;
+            font-weight: 400;
+            margin-top: 6px;
+            background: rgba(255, 215, 140, 0.2);
+            display: inline-block;
+            padding: 2px 20px;
+            border-radius: 30px;
+        }
+
+        .mode-indicator {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #a08060;
+            background: rgba(255, 215, 140, 0.15);
+            padding: 4px 16px;
+            border-radius: 40px;
+            display: inline-block;
+            border: 1px dashed #dbb080;
+        }
+
+        .input-section {
+            margin-bottom: 28px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 700;
+            font-size: 15px;
+            color: #4a3520;
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+        }
+
+        .input-group label .emoji {
+            margin-right: 6px;
+        }
+
+        .input-group label .hint {
+            font-weight: 400;
+            font-size: 13px;
+            color: #a08060;
+            margin-left: 6px;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 16px;
+            font-family: inherit;
+            border: 2px solid #f0e0cc;
+            border-radius: 18px;
+            background: #fefcf8;
+            transition: all 0.25s;
+            color: #2d1f0f;
+            outline: none;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            border-color: #ff8c00;
+            background: #fffdfa;
+            box-shadow: 0 0 0 6px rgba(255, 140, 0, 0.12);
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 64px;
+            line-height: 1.6;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 12px 0 8px;
+        }
+
+        .btn {
+            padding: 14px 38px;
+            font-size: 18px;
+            font-weight: 700;
+            font-family: inherit;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #ff6b00, #ff9500);
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(255, 107, 0, 0.35);
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(255, 107, 0, 0.45);
+        }
+
+        .btn-generate:active {
+            transform: translateY(0px) scale(0.98);
+        }
+
+        .btn-random {
+            background: #f0e4d8;
+            color: #5a4030;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            flex: 0 0 auto;
+        }
+
+        .btn-random:hover {
+            background: #e6d6c8;
+            transform: translateY(-2px);
+        }
+
+        .btn-copy {
+            background: #2d1f0f;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(45, 31, 15, 0.25);
+            padding: 12px 30px;
+            font-size: 15px;
+        }
+
+        .btn-copy:hover {
+            background: #1f140a;
+            transform: translateY(-2px);
+        }
+
+        .btn-copy:active {
+            transform: scale(0.96);
+        }
+
+        .btn-success {
+            background: #1a8a4a !important;
+            box-shadow: 0 4px 16px rgba(26, 138, 74, 0.35) !important;
+        }
+
+        .output-section {
+            margin-top: 30px;
+            border-top: 2px dashed #f0dcc8;
+            padding-top: 28px;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .output-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4a3520;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .output-header h2 .mode-tag {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 2px 14px;
+            border-radius: 30px;
+            letter-spacing: 0.3px;
+            background: #f0e4d8;
+            color: #5a4030;
+        }
+        .output-header h2 .mode-tag.yx {
+            background: #ff6b00;
+            color: #fff;
+        }
+        .output-header h2 .mode-tag.xb {
+            background: #2d7a4a;
+            color: #fff;
+        }
+        .output-header h2 .mode-tag.zj {
+            background: #1a5c8a;
+            color: #fff;
+        }
+
+        .output-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .output-card {
+            background: #fefcf8;
+            border-radius: 28px;
+            padding: 28px 32px;
+            border: 2px solid #f0e0cc;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.02);
+            min-height: 160px;
+            transition: all 0.2s;
+        }
+
+        .output-card.empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #b8a088;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .output-card.empty .big-icon {
+            font-size: 52px;
+            opacity: 0.5;
+        }
+
+        .generated-content {
+            font-size: 16px;
+            line-height: 1.9;
+            color: #2d1f0f;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .generated-content .title-line {
+            font-size: 26px;
+            font-weight: 900;
+            text-align: center;
+            background: linear-gradient(135deg, #e84c00, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 18px;
+            letter-spacing: 1px;
+            line-height: 1.3;
+        }
+
+        .generated-content .body-text {
+            margin-top: 4px;
+        }
+
+        .generated-content .body-text p {
+            margin-bottom: 12px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #1f140a;
+            color: #fff;
+            padding: 14px 32px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+            z-index: 999;
+            letter-spacing: 0.3px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0px);
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 24px 18px 32px;
+                border-radius: 32px;
+            }
+            .header h1 {
+                font-size: 30px;
+            }
+            .input-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .btn {
+                padding: 12px 24px;
+                font-size: 16px;
+            }
+            .output-card {
+                padding: 20px 18px;
+            }
+            .generated-content .title-line {
+                font-size: 20px;
+            }
+            .action-bar {
+                flex-direction: column;
+            }
+            .btn-random {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .header h1 {
+                font-size: 24px;
+            }
+            .output-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-badge">⚡ 三模式 · 随机切换</div>
+            <h1>📢 营销号生成器</h1>
+            <p>营销号 · 小编 · 专家 三种风格随机生成</p>
+            <div class="mode-indicator">🎲 每次点击，随机一种模式，无需手动选择</div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-row">
+                <div class="input-group">
+                    <label><span class="emoji">🎯</span> 事件主体 <span class="hint">（如：香蕉）</span></label>
+                    <input type="text" id="subject" placeholder="输入主体，例如：香蕉" value="香蕉" />
+                </div>
+                <div class="input-group">
+                    <label><span class="emoji">⚡</span> 事件 <span class="hint">（如：可以补充钾）</span></label>
+                    <input type="text" id="event" placeholder="输入事件，例如：可以补充钾" value="可以补充钾" />
+                </div>
+            </div>
+            <div class="input-group">
+                <label><span class="emoji">💡</span> 解释 <span class="hint">（如：香蕉中有钾元素）</span></label>
+                <textarea id="explanation" rows="2" placeholder="输入解释，例如：香蕉中有钾元素">香蕉中有钾元素</textarea>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn btn-generate" id="generateBtn">🚀 生成爆款文案</button>
+            <button class="btn btn-random" id="randomBtn">🎲 随机示例</button>
+        </div>
+
+        <div class="output-section">
+            <div class="output-header">
+                <h2>
+                    📄 生成的文案
+                    <span class="mode-tag" id="modeTag">🎲 随机模式</span>
+                </h2>
+                <div class="output-actions">
+                    <button class="btn btn-copy" id="copyBtn">📋 复制文案</button>
+                </div>
+            </div>
+            <div class="output-card empty" id="outputCard">
+                <div class="big-icon">✍️</div>
+                <div>输入内容后点击「生成爆款文案」</div>
+                <div style="font-size:13px; color:#c8b8a8;">营销号 · 小编 · 专家 随机出现</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ============================================================
+        //  语料库 —— 营销号风格（句式丰富版）
+        // ============================================================
+        const CORPUS = {
+            openers: [
+                '家人们谁懂啊！', '惊呆了老铁！', '我的天呐！', '万万没想到！', '太震撼了！',
+                '今天这个视频，你一定要看到最后！', '我敢说，99%的人都不知道这个秘密！',
+                '全网都在疯传这件事！', '看到最后我彻底破防了！', '真的假的？我都不敢相信自己的眼睛！',
+                '刚知道这个消息的时候，我整个人都傻了！', '家人们，这条视频价值百万！',
+                '不瞒你们说，我查了一整天才敢发出来！', '说出来你们可能不信……',
+                '先别划走！这个内容绝对颠覆你的认知！', '家人们，今天说一个你们肯定感兴趣的话题！',
+                '各位老铁，今天这个视频绝对值得看！', '我又来给大家爆料了！',
+                '准备好了吗？今天的内容有点炸！', '全网首发！这个秘密藏不住了！',
+            ],
+            subjectIntros: [
+                '今天要说的主角，就是「{subject}」',
+                '你们知道「{subject}」吗？',
+                '这个「{subject}」，可不简单',
+                '「{subject}」，大家都很熟悉吧？',
+                '但你们真的了解「{subject}」吗？',
+                '「{subject}」这个东西，平时不起眼，背后却藏着大秘密',
+                '我敢打赌，你对「{subject}」一无所知',
+                '「{subject}」—— 一个你天天见，却根本不懂的狠角色',
+                '大家都知道「{subject}」，但你可能不知道，它竟然还能「{event}」！',
+                '「{subject}」——人人都知道，但「{subject}」能「{event}」这件事，99%的人不知道！',
+                '我们都知道「{subject}」，但是「{subject}」可以「{event}」？你敢信？',
+                '「{subject}」谁不知道？但「{subject}」能「{event}」？说出来吓到你！',
+                '你肯定知道「{subject}」，但你绝对不知道「{subject}」还能「{event}」！',
+                '「{subject}」大家都认识，可「{subject}」能「{event}」这个秘密，藏得太深了！',
+            ],
+            eventIntros: [
+                '最近我发现了一个关于「{subject}」的惊天秘密',
+                '「{subject}」竟然「{event}」！',
+                '你敢信？「{subject}」居然能「{event}」',
+                '「{subject}」隐藏了一个不为人知的秘密——它可以「{event}」',
+                '你知道吗？「{subject}」其实可以「{event}」',
+                '这件事说出来你可能不信：「{subject}」竟然「{event}」',
+                '「{subject}」能「{event}」？我一开始也不信！',
+                '你以为「{subject}」只是普普通通？大错特错！它还能「{event}」',
+                '为什么「{subject}」可以「{event}」呢？',
+                '「{subject}」到底为什么能「{event}」？',
+                '你有没有想过，为什么「{subject}」能「{event}」？',
+                '「{subject}」可以「{event}」的背后，到底藏着什么秘密？',
+                '为什么偏偏是「{subject}」能「{event}」？',
+                '「{subject}」能「{event}」，这到底是为什么？',
+            ],
+            transitions: [
+                '事情是这样的……', '听我慢慢道来', '你们先别急，重点在后面',
+                '接下来我要说的，可能会颠覆你的认知', '你们猜怎么着？', '关键点来了！',
+                '注意看，重点在这里', '好戏才刚刚开始', '别眨眼，精彩的部分来了',
+                '你们先深呼吸一下，我要开始讲了', '你们先稳住，听我慢慢说',
+                '重点来了，别分心！',
+            ],
+            fillers: [
+                '我真的没有在标题党，这个事情千真万确', '我反复确认了无数遍，才敢发出来',
+                '你们一定一定要看到最后', '这个事情真的不是一般的离谱',
+                '我已经不知道用什么语言来形容了', '你们先冷静一下，听我说完',
+                '这个事情说来话长', '你们知道最离谱的是什么吗？', '我真的不是跟你们开玩笑',
+                '我先给大家卖个关子', '你们先别划走，听我慢慢说', '这个事情真的不是开玩笑的',
+                '我刚开始知道的时候，跟你们现在一样震惊', '为了验证这个事情，我查了三天三夜的资料',
+                '你们先别急着质疑，听我解释完', '我知道你们肯定不信，但这是真的',
+                '我当时听到这个消息，手机都吓掉了', '这个事情我查了很多资料，才敢确定',
+                '你们先别着急划走，重点在后面', '我知道你们可能不信，但这是真的',
+                '我反复核实了，绝对靠谱！', '这个事情太离谱了，我必须说出来！',
+            ],
+            explainIntros: [
+                '经过我深入研究，终于找到了答案', '其实原因很简单', '真相只有一个！',
+                '原来如此，是因为', '背后的原因让人恍然大悟', '答案其实就在眼前',
+                '我查阅了大量资料，终于搞明白了', '你们知道这是为什么吗？因为',
+                '说出来你可能不信，原因竟然是', '经过反复求证，我发现——',
+                '因为「{explanation}」，所以「{subject}」才能「{event}」！',
+                '答案就是「{explanation}」，这就是「{subject}」能「{event}」的秘密！',
+                '其实原因就是「{explanation}」，是不是很简单？',
+                '「{explanation}」——这就是「{subject}」能「{event}」的真正原因！',
+                '为什么「{subject}」能「{event}」？因为「{explanation}」！',
+                '说到底，就是因为「{explanation}」，所以「{subject}」才能「{event}」！',
+                '「{subject}」能「{event}」的答案，就藏在「{explanation}」里！',
+            ],
+            shocks: [
+                '这也太不可思议了吧！', '直接给我整不会了！', '我真的会谢！', '这也太炸了吧！',
+                '我的三观被震碎了！', '这谁顶得住啊！', '给我看懵了！',
+                '简直离谱他妈给离谱开门——离谱到家了！', '我整个人都麻了！', '这也太逆天了吧！',
+                '我的天老爷！', '救命！这也太离谱了！', '我直接原地起飞！',
+                '这波操作，属实给我看傻了！', '这也太硬核了吧！', '我直接好家伙！',
+            ],
+            summaries: [
+                '所以，「{subject}」之所以能「{event}」，就是因为「{explanation}」',
+                '这个真相告诉我们，「{subject}」远比我们想象的要神奇',
+                '没想到「{subject}」还有这样的一面', '这就是「{subject}」的秘密，你学会了吗？',
+                '看到这里，你是不是也对「{subject}」刮目相看了？',
+                '「{subject}」的奥秘，今天终于被揭开了', '原来「{subject}」背后还有这样的故事',
+                '现在你知道「{subject}」为什么能「{event}」了吧？',
+                '所以说，「{subject}」能「{event}」的关键，就在于「{explanation}」！',
+                '现在你明白了吧？「{subject}」能「{event}」，全靠「{explanation}」！',
+                '「{subject}」能「{event}」，原来一切都是因为「{explanation}」！',
+            ],
+            interactions: [
+                '你们觉得呢？评论区告诉我！', '看到这里的家人们，点个赞再走！',
+                '转发给更多的人看看！', '关注我，带你发现更多神奇的事情！',
+                '你们有没有遇到过类似的事情？', '评论区聊聊你们的看法！',
+                '别忘了点赞关注，我们下期见！', '家人们，你们怎么看？', '觉得有用的，双击屏幕！',
+                '还有什么想知道的，评论区留言！', '这波操作，你给几分？',
+                '快点转发，让更多人知道！', '点赞过万，下期继续爆料！',
+            ],
+            titleTemplates: [
+                '【震惊！】{subject}竟然{event}？真相让人头皮发麻！',
+                '🔥 {subject}的惊人秘密：{event}！99%的人都不知道！',
+                '🚨 紧急曝光！{subject}居然能{event}，看完我彻底服了！',
+                '💥 炸了！{subject}隐藏多年的真相被揭开：{event}！',
+                '😱 我人傻了！{subject}真的可以{event}，原因竟是……',
+                '⚠️ 警告！关于{subject}的这件事，你必须知道！{event}！',
+                '🎯 重磅！{subject}竟然能{event}，专家都震惊了！',
+                '📢 全网首发！{subject}的秘密：{event}，看完赶紧转发！',
+                '🤯 颠覆认知！{subject}真的可以{event}，原因太意外了！',
+                '✨ 太神奇了！{subject}居然能{event}，赶紧告诉家里人！',
+                '为什么{subject}能{event}？答案让你意想不到！',
+                '都知道{subject}，但不知道{subject}能{event}？今天告诉你！',
+                '{subject}能{event}？原因竟然是……（99%的人不知道）',
+                '「{subject}」的隐藏功能：{event}！看完我服了！',
+                '全网疯传：{subject}竟然可以{event}！真相只有一个！',
+            ],
+        };
+
+        // ============================================================
+        //  语料库 —— 小编风格（句式丰富版）
+        // ============================================================
+        const CORPUS_XB = {
+            openers: [
+                '大家好，我是小编', '各位朋友大家好，我是小编', '大家好呀，我是你们的小编',
+                '哈喽，我是小编', '观众朋友们好，我是小编', '大家好，我是你们的小编，今天又来给大家科普了',
+                '各位朋友好，我是小编，今天聊点有意思的', '哈喽大家好，我是小编，今天的话题你们肯定感兴趣',
+                '大家好，我是小编，今天给大家分享一个冷知识', '各位好，我是小编，今天的内容保证让你涨知识',
+            ],
+            subjectEventIntros: [
+                '大家可能不知道，{subject}其实可以{event}',
+                '你知道吗？{subject}竟然能{event}',
+                '很多人都不知道，{subject}有一个隐藏功能——可以{event}',
+                '今天小编要告诉大家一个秘密：{subject}可以{event}',
+                '或许你从未想过，{subject}居然能{event}',
+                '大家都知道{subject}，但你可能不知道，{subject}其实还可以{event}哦',
+                '我们都知道{subject}，但是{subject}能{event}这件事，可能很多人都不知道',
+                '{subject}大家都很熟悉，但{subject}可以{event}，你知道吗？',
+                '说起{subject}，大家都知道，但{subject}能{event}，这个你可能真不知道',
+                '我们都知道{subject}，可{subject}还能{event}？小编也是刚知道！',
+                '{subject}谁都知道，但是{subject}能{event}，你绝对想不到！',
+                '大家可能都知道{subject}，但{subject}可以{event}，这个秘密藏得可深了',
+            ],
+            suspense: [
+                '为什么{subject}可以{event}呢？', '这到底是为什么呢？',
+                '那{subject}为什么能做到{event}呢？', '你是不是也很好奇，{subject}为什么能{event}？',
+                '为什么{subject}能做到{event}呢？', '{subject}到底为什么可以{event}呢？',
+                '那{subject}为什么能{event}呢？', '你有没有想过，{subject}为什么能{event}？',
+                '{subject}能{event}，这背后的原因是什么？', '为什么偏偏是{subject}能{event}呢？',
+            ],
+            transitions: [
+                '就让小编带大家一探究竟', '今天小编就来给大家揭秘',
+                '小编查了很多资料，终于弄明白了', '别着急，小编慢慢告诉你',
+                '接下来，小编就为大家详细解释', '话不多说，小编直接上干货',
+                '小编这就来给大家解答', '下面，小编就来揭开谜底',
+                '小编整理了一下，这就告诉大家',
+            ],
+            fillers: [
+                '小编也是第一次知道这件事，真的涨知识了', '小编反复确认了好几遍，才敢发出来',
+                '这个事情小编觉得非常有意思', '小编一开始也不信，后来查了资料才恍然大悟',
+                '小编今天就把这个干货分享给大家', '看完之后，小编只能说一句：太神奇了',
+                '小编已经把重点都整理好了，你们直接看', '小编觉得这个知识点非常实用，建议收藏',
+                '小编为了验证，还特意去查了权威资料', '大家可能觉得不可思议，但这是真的',
+                '小编也是查了很多资料才弄明白的', '这个事情小编觉得特别有意思，分享给大家',
+                '小编一开始也不信，后来发现是真的', '小编反复核实了，绝对靠谱！',
+                '这个事情小编也是第一次听说，太惊讶了', '小编觉得这个太值得分享了，必须发出来',
+            ],
+            explainIntros: [
+                '原因其实很简单，就是因为', '原来如此，是因为', '经过小编研究，发现原因是',
+                '答案就在这里：', '真相只有一个——', '小编终于找到了答案，那就是',
+                '因为{explanation}，所以{subject}才能{event}',
+                '答案就是{explanation}，这就是{subject}能{event}的原因',
+                '其实原因很简单，就是因为{explanation}',
+                '{subject}能{event}，根源就在于{explanation}',
+                '为什么{subject}能{event}？因为{explanation}呀！',
+                '说到底，就是因为{explanation}，所以{subject}才能{event}',
+                '答案揭晓：{explanation}，这就是{subject}能{event}的秘密',
+            ],
+            summaries: [
+                '所以，{subject}能{event}，就是因为{explanation}',
+                '这下大家明白了吧？{subject}的秘密就是{explanation}',
+                '简单来说，{subject}之所以能{event}，全靠{explanation}',
+                '现在你知道{subject}为什么可以{event}了吧？',
+                '小编总结一下：{subject}能{event}，核心就是{explanation}',
+                '所以说，{subject}能{event}，关键就在{explanation}',
+                '现在你明白了吧？{subject}能{event}，就是因为{explanation}',
+                '小编一句话总结：{subject}能{event}，全靠{explanation}！',
+                '{subject}能{event}的真相，就是{explanation}，你记住了吗？',
+            ],
+            interactions: [
+                '如果你也觉得有用，记得给小编点个赞！', '关注小编，每天带你涨知识！',
+                '评论区说说你还知道哪些冷知识？', '转发给朋友，一起学习！',
+                '小编在评论区等你们哦！', '觉得不错的话，双击屏幕支持小编～',
+                '有什么问题，欢迎留言，小编会回复的！', '记得关注小编，下期更精彩！',
+                '点赞收藏，下次不迷路！', '评论区告诉小编，你学到了吗？',
+            ],
+            titleTemplates: [
+                '小编揭秘：{subject}竟然可以{event}！',
+                '🔥 小编科普：{subject}的隐藏功能——{event}',
+                '📢 小编说：{subject}能{event}，你知道吗？',
+                '💡 小编冷知识：{subject}为什么可以{event}？',
+                '🧐 小编带你了解：{subject}与{event}的秘密',
+                '✨ 小编分享：{subject}居然能{event}，太神奇了！',
+                '🤔 小编问答：{subject}可以{event}吗？答案来了！',
+                '为什么{subject}能{event}？小编来告诉你！',
+                '都知道{subject}，但不知道能{event}？小编科普！',
+                '{subject}能{event}？小编带你一探究竟！',
+                '小编揭秘：{subject}能{event}的原因，太简单了！',
+                '{subject}的隐藏技能：{event}，小编都惊了！',
+            ],
+        };
+
+        // ============================================================
+        //  语料库 —— 专家模式（新）
+        // ============================================================
+        const CORPUS_ZJ = {
+            openers: [
+                '专家研究发现，', '据权威专家透露，', '专家经过多年研究，', '专家团队最新发现，',
+                '有专家指出，', '专家揭秘，', '专家告诉你真相，', '专家解读：',
+                '专家表示，', '专家经过反复实验，', '专家团队证实，', '专家得出结论：',
+                '某知名专家称，', '专家从专业角度分析，', '专家在最新报告中指出，',
+                '专家经过大量数据验证，', '专家从科学角度解释，', '专家权威发布：',
+            ],
+            subjectEventIntros: [
+                '为什么{subject}可以{event}？专家告诉你真相。',
+                '专家揭秘：{subject}竟然能{event}，原因出乎意料。',
+                '专家研究发现，{subject}能{event}，这背后有科学依据。',
+                '关于{subject}能{event}这件事，专家早就给出了答案。',
+                '专家经过多年研究，终于发现{subject}可以{event}的秘密。',
+                '专家团队证实，{subject}确实能{event}，原理如下。',
+                '专家从专业角度解释，{subject}能{event}，关键在{explanation}。',
+                '专家指出，{subject}能{event}，这并非偶然。',
+                '专家分析，{subject}之所以能{event}，是因为{explanation}。',
+                '专家经过反复验证，{subject}能{event}是确凿的事实。',
+                '专家表示，{subject}能{event}，很多人却不知道。',
+                '专家告诉我们，{subject}能{event}，原因很简单。',
+            ],
+            suspense: [
+                '那么，{subject}为什么能{event}呢？专家来解释。',
+                '专家来揭秘：{subject}能{event}的底层逻辑是什么？',
+                '专家研究多年，终于弄清{subject}能{event}的真相。',
+                '专家团队经过大量实验，找到了{subject}能{event}的根本原因。',
+                '专家从科学角度，为你解析{subject}能{event}的奥秘。',
+                '专家说，{subject}能{event}，原因就在这里。',
+                '专家经过长期观察，发现{subject}能{event}的规律。',
+                '专家用专业术语解释，但小编帮你翻译成人话：{subject}能{event}因为{explanation}。',
+            ],
+            transitions: [
+                '专家进一步解释，', '专家接着分析，', '专家补充说明，',
+                '专家用数据说话，', '专家举例说明，', '专家从原理层面剖析，',
+                '专家经过比对，', '专家通过实验验证，', '专家总结出以下几点，',
+                '专家强调，', '专家特别指出，', '专家最后总结道，',
+            ],
+            fillers: [
+                '专家为此研究了三年。', '专家查阅了大量文献。', '专家团队进行了上百次实验。',
+                '专家在多个权威期刊上发表过相关论文。', '专家曾多次在学术会议上分享这一发现。',
+                '专家经过反复论证，才得出这一结论。', '专家表示，这一发现具有重大意义。',
+                '专家提醒大家，要注意这个细节。', '专家说，很多人忽略了这一点。',
+                '专家从统计学角度，证实了这一点。', '专家经过长期追踪，才找到规律。',
+                '专家指出，这一现象并非特例。', '专家团队的数据支撑非常扎实。',
+                '专家说，这个发现可能会改变我们的认知。', '专家强调，这是经过严谨验证的。',
+                '专家用了很长时间，才找到答案。', '专家说，这个原理其实很简单。',
+            ],
+            explainIntros: [
+                '专家解释，是因为{explanation}。',
+                '专家说，答案就是{explanation}。',
+                '专家认为，{explanation}是核心原因。',
+                '专家指出，{explanation}决定了{subject}能{event}。',
+                '专家经过分析，确定{explanation}是根本。',
+                '专家给出的结论是：{explanation}。',
+                '专家表示，{explanation}就是{subject}能{event}的密钥。',
+                '专家告诉我们，因为{explanation}，所以{subject}能{event}。',
+                '专家从分子层面解释，{explanation}起了关键作用。',
+                '专家经过计算，得出{explanation}是主要因素。',
+            ],
+            shocks: [
+                '这个发现令人震惊！', '专家也感到意外。', '这颠覆了传统认知。',
+                '专家说，这是近十年的重要发现。', '这个结论，让专家团队都兴奋不已。',
+                '专家表示，这一发现意义重大。', '专家称，这是该领域的一大突破。',
+                '专家说，这个结果完全超出了预期。', '专家团队欢呼雀跃。',
+                '这个发现，将改写教科书。', '专家说，这是具有里程碑意义的。',
+            ],
+            summaries: [
+                '综上，专家证实{subject}能{event}，关键在于{explanation}。',
+                '专家总结：{subject}能{event}，就是因为{explanation}。',
+                '所以，专家给出的最终答案是：{explanation}。',
+                '专家研究得出结论，{subject}能{event}，{explanation}是决定性因素。',
+                '专家告诉我们，{subject}能{event}，简单来说就是{explanation}。',
+                '专家团队一致认为，{subject}能{event}，核心是{explanation}。',
+                '专家最后强调，{subject}能{event}，{explanation}不容忽视。',
+                '经过专家论证，{subject}能{event}的真相就是{explanation}。',
+            ],
+            interactions: [
+                '关注我们，获取更多专家解读。', '转发给朋友，一起涨知识。',
+                '你有什么观点？欢迎评论区交流。', '专家在线答疑，评论区留言。',
+                '点赞支持，让更多人看到专业分析。', '收藏起来，以后用得着。',
+                '专家团队会持续更新，敬请期待。', '评论区说说你的看法。',
+                '分享给需要的人，传递知识。', '专家提醒：关注我们，不迷路。',
+            ],
+            titleTemplates: [
+                '专家揭秘：{subject}竟然能{event}，原因终于找到了！',
+                '🔬 专家研究：{subject}能{event}，科学依据在这里。',
+                '📊 专家权威发布：{subject}与{event}的关系，真相大白！',
+                '🎓 专家多年研究发现，{subject}可以{event}，震惊学界！',
+                '🧪 专家实验证实：{subject}能{event}，原理出乎意料。',
+                '📝 专家深度解析：{subject}为什么能{event}？答案简单。',
+                '💡 专家告诉你：{subject}能{event}，背后的科学不复杂。',
+                '🔍 专家追踪研究：{subject}能{event}，终于有了定论。',
+                '📈 专家数据说话：{subject}能{event}，是必然结果。',
+                '⚡ 专家揭示：{subject}能{event}，这一发现将改变生活。',
+                '为什么{subject}能{event}？专家给出权威解答。',
+                '专家研究多年发现，{subject}可以{event}，快来看看！',
+            ],
+        };
+
+        // ============================================================
+        //  工具函数
+        // ============================================================
+
+        function pick(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function pickMulti(arr, count) {
+            const shuffled = [...arr];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled.slice(0, count);
+        }
+
+        function fill(template, data) {
+            return template.replace(/\{(\w+)\}/g, (_, key) => data[key] || '');
+        }
+
+        function addEmojis(text) {
+            const emojis = ['🔥', '💥', '😱', '🤯', '👀', '💪', '✨', '🎉', '😭', '🤔', '🚨', '⚠️', '🎯', '📢', '⚡', '💡', '🌟', '😲'];
+            return text.replace(/([。！？])(?!\s*[🔥💥😱🤯👀💪✨🎉😭🤔🚨⚠️🎯📢⚡💡🌟😲])/g, (match, p1) => {
+                if (Math.random() < 0.45) {
+                    return p1 + pick(emojis);
+                }
+                return p1;
+            });
+        }
+
+        // ============================================================
+        //  核心生成 —— 营销号风格
+        // ============================================================
+
+        function generateYingXiaoCopy(subject, event, explanation) {
+            if (!subject.trim() || !event.trim() || !explanation.trim()) return null;
+            const data = { subject: subject.trim(), event: event.trim(), explanation: explanation.trim() };
+
+            const titleTemplate = pick(CORPUS.titleTemplates);
+            let title = fill(titleTemplate, data);
+            if (!title.match(/^[\[🔥💥🚨😱⚠️🎯📢🤯✨]/)) {
+                title = pick(['🔥 ', '💥 ', '🚨 ', '😱 ', '⚠️ ']) + title;
+            }
+            if (!title.match(/[！!]$/)) title += pick(['！', '！！', '！！！', ' 💥', ' 🔥']);
+
+            const paragraphs = [];
+            const opener = pick(CORPUS.openers);
+            const intro = pick(CORPUS.subjectIntros);
+            paragraphs.push(opener + ' ' + fill(intro, data) + '。');
+
+            const eventIntro = pick(CORPUS.eventIntros);
+            const transition = pick(CORPUS.transitions);
+            paragraphs.push(fill(eventIntro, data) + ' ' + transition + '……');
+
+            const fillerCount = Math.random() < 0.5 ? 1 : 2;
+            const fillers = pickMulti(CORPUS.fillers, fillerCount);
+            paragraphs.push(fillers.join('。') + '。');
+
+            const explainIntro = pick(CORPUS.explainIntros);
+            let p4 = fill(explainIntro, data);
+            if (!p4.match(/[！!。？?]$/)) p4 += '！';
+            if (Math.random() < 0.6) p4 += ' ' + pick(CORPUS.shocks);
+            paragraphs.push(p4);
+
+            if (Math.random() < 0.6) {
+                const extraShock = pick(CORPUS.shocks);
+                const extraFiller = pick(CORPUS.fillers);
+                paragraphs.push(extraShock + ' ' + extraFiller + '。');
+            }
+
+            const summary = pick(CORPUS.summaries);
+            paragraphs.push(fill(summary, data));
+
+            const interaction = pick(CORPUS.interactions);
+            paragraphs.push(interaction);
+
+            let body = paragraphs.map(p => p.trim()).filter(Boolean).join('\n\n');
+            body = addEmojis(body);
+
+            return { title, body, full: title + '\n\n' + body, mode: '营销号' };
+        }
+
+        // ============================================================
+        //  核心生成 —— 小编风格
+        // ============================================================
+
+        function generateXiaoBianCopy(subject, event, explanation) {
+            if (!subject.trim() || !event.trim() || !explanation.trim()) return null;
+            const data = { subject: subject.trim(), event: event.trim(), explanation: explanation.trim() };
+
+            const titleTemplate = pick(CORPUS_XB.titleTemplates);
+            let title = fill(titleTemplate, data);
+            if (!title.match(/^[\[🔥💡📢🧐✨🤔]/)) {
+                title = pick(['🔥 ', '💡 ', '📢 ', '🧐 ', '✨ ']) + title;
+            }
+            if (!title.match(/[！!？?]$/)) title += '！';
+
+            const paragraphs = [];
+            const opener = pick(CORPUS_XB.openers);
+            const intro = pick(CORPUS_XB.subjectEventIntros);
+            paragraphs.push(opener + '，' + fill(intro, data) + '。');
+
+            const suspense = pick(CORPUS_XB.suspense);
+            paragraphs.push(fill(suspense, data));
+
+            const transition = pick(CORPUS_XB.transitions);
+            const fillerCount = Math.random() < 0.6 ? 1 : 2;
+            const fillers = pickMulti(CORPUS_XB.fillers, fillerCount);
+            let fillerText = fillers.join('。') + '。';
+            if (Math.random() < 0.5) fillerText = transition + '，' + fillerText;
+            else fillerText = transition + '。' + fillerText;
+            paragraphs.push(fillerText);
+
+            const explainIntro = pick(CORPUS_XB.explainIntros);
+            let p4 = fill(explainIntro, data);
+            if (!p4.match(/[！!。？?]$/)) p4 += '！';
+            if (Math.random() < 0.5) {
+                const extra = pick(['小编也是涨知识了', '原来如此', '真的太神奇了', '小编直呼内行', '没想到吧！', '是不是很简单？']);
+                p4 += ' ' + extra;
+            }
+            paragraphs.push(p4);
+
+            const summary = pick(CORPUS_XB.summaries);
+            paragraphs.push(fill(summary, data));
+
+            const interaction = pick(CORPUS_XB.interactions);
+            paragraphs.push(interaction);
+
+            let body = paragraphs.map(p => p.trim()).filter(Boolean).join('\n\n');
+            body = addEmojis(body);
+
+            return { title, body, full: title + '\n\n' + body, mode: '小编' };
+        }
+
+        // ============================================================
+        //  核心生成 —— 专家风格（新）
+        // ============================================================
+
+        function generateZhuanJiaCopy(subject, event, explanation) {
+            if (!subject.trim() || !event.trim() || !explanation.trim()) return null;
+            const data = { subject: subject.trim(), event: event.trim(), explanation: explanation.trim() };
+
+            const titleTemplate = pick(CORPUS_ZJ.titleTemplates);
+            let title = fill(titleTemplate, data);
+            if (!title.match(/^[\[🔬📊🎓🧪📝💡🔍📈⚡]/)) {
+                title = pick(['🔬 ', '📊 ', '🎓 ', '🧪 ', '📝 ']) + title;
+            }
+            if (!title.match(/[！!？?]$/)) title += '！';
+
+            const paragraphs = [];
+            // 1. 开场 + 主体事件引入
+            const opener = pick(CORPUS_ZJ.openers);
+            const intro = pick(CORPUS_ZJ.subjectEventIntros);
+            // 专家开场通常是一句话，直接引入
+            let first = opener + fill(intro, data);
+            if (!first.match(/[。！？?]$/)) first += '。';
+            paragraphs.push(first);
+
+            // 2. 悬念（可选，有时直接解释）
+            const useSuspense = Math.random() < 0.6;
+            if (useSuspense) {
+                const suspense = pick(CORPUS_ZJ.suspense);
+                paragraphs.push(fill(suspense, data));
+            }
+
+            // 3. 过渡 + 废话（专家废话通常是研究过程）
+            const transition = pick(CORPUS_ZJ.transitions);
+            const fillerCount = Math.random() < 0.5 ? 1 : 2;
+            const fillers = pickMulti(CORPUS_ZJ.fillers, fillerCount);
+            let fillerText = fillers.join(' ') + ' ';
+            if (Math.random() < 0.5) fillerText = transition + fillerText;
+            else fillerText = transition + ' ' + fillerText;
+            paragraphs.push(fillerText.trim());
+
+            // 4. 解释引入 + 解释
+            const explainIntro = pick(CORPUS_ZJ.explainIntros);
+            let p4 = fill(explainIntro, data);
+            if (!p4.match(/[！!。？?]$/)) p4 += '！';
+            if (Math.random() < 0.5) {
+                const extra = pick(['专家对此表示肯定', '这一结论得到广泛认可', '专家团队一致同意', '这是经过严格验证的']);
+                p4 += ' ' + extra;
+            }
+            paragraphs.push(p4);
+
+            // 5. 震惊或总结（专家模式有时加震惊）
+            if (Math.random() < 0.5) {
+                const shock = pick(CORPUS_ZJ.shocks);
+                paragraphs.push(shock);
+            }
+
+            // 6. 总结
+            const summary = pick(CORPUS_ZJ.summaries);
+            paragraphs.push(fill(summary, data));
+
+            // 7. 互动
+            const interaction = pick(CORPUS_ZJ.interactions);
+            paragraphs.push(interaction);
+
+            let body = paragraphs.map(p => p.trim()).filter(Boolean).join('\n\n');
+            // 专家模式少加 emoji，保持严谨感
+            body = addEmojis(body);
+
+            return { title, body, full: title + '\n\n' + body, mode: '专家' };
+        }
+
+        // ============================================================
+        //  主入口：随机选择三种模式之一
+        // ============================================================
+
+        function generateMarketingCopy(subject, event, explanation) {
+            const rand = Math.random();
+            let result = null;
+            if (rand < 0.33) {
+                result = generateYingXiaoCopy(subject, event, explanation);
+            } else if (rand < 0.66) {
+                result = generateXiaoBianCopy(subject, event, explanation);
+            } else {
+                result = generateZhuanJiaCopy(subject, event, explanation);
+            }
+            return result;
+        }
+
+        // ============================================================
+        //  UI 交互
+        // ============================================================
+
+        const subjectInput = document.getElementById('subject');
+        const eventInput = document.getElementById('event');
+        const explanationInput = document.getElementById('explanation');
+        const generateBtn = document.getElementById('generateBtn');
+        const randomBtn = document.getElementById('randomBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const outputCard = document.getElementById('outputCard');
+        const toast = document.getElementById('toast');
+        const modeTag = document.getElementById('modeTag');
+
+        let lastGenerated = '';
+        let lastMode = '';
+
+        function renderResult(result) {
+            if (!result) {
+                outputCard.className = 'output-card empty';
+                outputCard.innerHTML = `
+                    <div class="big-icon">✍️</div>
+                    <div>请完整填写三个字段后再生成</div>
+                    <div style="font-size:13px; color:#c8b8a8;">主体 · 事件 · 解释 一个都不能少</div>
+                `;
+                modeTag.textContent = '🎲 随机模式';
+                modeTag.className = 'mode-tag';
+                lastGenerated = '';
+                lastMode = '';
+                return;
+            }
+
+            outputCard.className = 'output-card';
+            outputCard.innerHTML = `
+                <div class="generated-content">
+                    <div class="title-line">${escapeHtml(result.title)}</div>
+                    <div class="body-text">${escapeHtml(result.body).replace(/\n/g, '<br />')}</div>
+                </div>
+            `;
+            lastGenerated = result.full;
+            lastMode = result.mode || '未知';
+
+            modeTag.textContent = '🎯 ' + lastMode + '风格';
+            if (lastMode === '营销号') {
+                modeTag.className = 'mode-tag yx';
+            } else if (lastMode === '小编') {
+                modeTag.className = 'mode-tag xb';
+            } else if (lastMode === '专家') {
+                modeTag.className = 'mode-tag zj';
+            } else {
+                modeTag.className = 'mode-tag';
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function generateAndRender() {
+            const subject = subjectInput.value;
+            const event = eventInput.value;
+            const explanation = explanationInput.value;
+            const result = generateMarketingCopy(subject, event, explanation);
+            if (result) {
+                renderResult(result);
+                showToast('✅ 已生成「' + result.mode + '」风格文案！');
+            } else {
+                renderResult(null);
+                showToast('⚠️ 请完整填写三个字段');
+            }
+        }
+
+        function loadRandomExample() {
+            const examples = [
+                { subject: '香蕉', event: '可以补充钾', explanation: '香蕉中有丰富的钾元素' },
+                { subject: '可乐', event: '可以清洗马桶', explanation: '可乐中的碳酸和磷酸能溶解污垢' },
+                { subject: '柠檬', event: '可以去除冰箱异味', explanation: '柠檬中的柠檬酸能中和碱性异味分子' },
+                { subject: '鸡蛋', event: '可以测试新鲜度', explanation: '鸡蛋放入水中，沉底的是新鲜的，浮起来的是陈蛋' },
+                { subject: '手机', event: '可以测量距离', explanation: '手机上的激光测距传感器可以精确测量物体距离' },
+                { subject: '咖啡', event: '可以提神醒脑', explanation: '咖啡中的咖啡因能阻断腺苷受体，让人保持清醒' },
+                { subject: '蜂蜜', event: '可以保鲜肉类', explanation: '蜂蜜中的天然抗菌成分能抑制细菌生长' },
+                { subject: '冰块', event: '可以去除衣服褶皱', explanation: '冰块放入烘干机，水蒸气能抚平衣物褶皱' },
+                { subject: '牛奶', event: '可以解辣', explanation: '牛奶中的酪蛋白能包裹辣椒素，减轻灼烧感' },
+                { subject: '橙子', event: '可以去除鱼腥味', explanation: '橙皮中的芳香油能中和鱼腥味分子' },
+                { subject: '茶叶', event: '可以去除脚臭', explanation: '茶叶中的单宁酸有收敛和杀菌作用' },
+                { subject: '白醋', event: '可以软化衣物', explanation: '白醋中的醋酸能中和碱性残留，让衣物柔软' },
+            ];
+            const ex = pick(examples);
+            subjectInput.value = ex.subject;
+            eventInput.value = ex.event;
+            explanationInput.value = ex.explanation;
+            generateAndRender();
+        }
+
+        let toastTimer = null;
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2200);
+        }
+
+        function copyContent() {
+            if (!lastGenerated) {
+                showToast('⚠️ 还没有生成文案，先点「生成爆款文案」吧');
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(lastGenerated).then(() => {
+                    showToast('📋 已复制到剪贴板！');
+                    copyBtn.classList.add('btn-success');
+                    setTimeout(() => copyBtn.classList.remove('btn-success'), 1200);
+                }).catch(() => {
+                    fallbackCopy();
+                });
+            } else {
+                fallbackCopy();
+            }
+        }
+
+        function fallbackCopy() {
+            const textarea = document.createElement('textarea');
+            textarea.value = lastGenerated;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('📋 已复制到剪贴板！');
+                copyBtn.classList.add('btn-success');
+                setTimeout(() => copyBtn.classList.remove('btn-success'), 1200);
+            } catch (e) {
+                showToast('⚠️ 复制失败，请手动复制');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // ============================================================
+        //  事件绑定
+        // ============================================================
+
+        generateBtn.addEventListener('click', generateAndRender);
+        randomBtn.addEventListener('click', loadRandomExample);
+        copyBtn.addEventListener('click', copyContent);
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                generateAndRender();
+            }
+        });
+
+        subjectInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                eventInput.focus();
+            }
+        });
+        eventInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                explanationInput.focus();
+            }
+        });
+
+        // ============================================================
+        //  初始化
+        // ============================================================
+
+        setTimeout(() => {
+            loadRandomExample();
+        }, 300);
+    </script>
+</body>
+</html>

@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>∞ 无限图书馆</title>
+    <style>
+        /* ===== 全局重置 & 基础 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(ellipse at center, #1a1410 0%, #0d0a08 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            padding: 20px;
+        }
+
+        /* ===== 主容器 — 仿古籍羊皮卷 ===== */
+        .library {
+            max-width: 820px;
+            width: 100%;
+            background: linear-gradient(165deg, #2c241e 0%, #1e1713 100%);
+            border-radius: 32px 32px 28px 28px;
+            padding: 32px 32px 28px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.85),
+                0 0 0 1px rgba(200, 170, 120, 0.15) inset,
+                0 0 0 2px rgba(200, 170, 120, 0.06) inset;
+            border: 1px solid rgba(180, 150, 100, 0.20);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* 装饰性「书脊」纹理 */
+        .library::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border-radius: 24px;
+            background: repeating-linear-gradient(90deg,
+                    transparent 0px,
+                    transparent 12px,
+                    rgba(180, 150, 100, 0.03) 12px,
+                    rgba(180, 150, 100, 0.03) 13px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== 标题区 ===== */
+        .header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px 20px;
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 1;
+            border-bottom: 1px solid rgba(200, 170, 120, 0.20);
+            padding-bottom: 16px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 400;
+            letter-spacing: 6px;
+            color: #d4c09a;
+            text-shadow: 0 0 20px rgba(200, 170, 120, 0.15), 0 2px 4px rgba(0, 0, 0, 0.5);
+            font-family: 'Times New Roman', 'Georgia', serif;
+        }
+
+        .title .infinity {
+            font-size: 32px;
+            color: #c9a96e;
+            margin-right: 4px;
+        }
+
+        .title .sub {
+            font-size: 14px;
+            letter-spacing: 2px;
+            color: #a08870;
+            font-weight: 300;
+            margin-left: 8px;
+        }
+
+        .stats {
+            font-size: 13px;
+            color: #a08870;
+            letter-spacing: 0.5px;
+            background: rgba(0, 0, 0, 0.30);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(200, 170, 120, 0.12);
+            white-space: nowrap;
+        }
+
+        .stats span {
+            color: #d4c09a;
+            font-weight: 400;
+        }
+
+        /* ===== 字符网格 — 16×16 ===== */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 2px;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.20);
+            border-radius: 12px;
+            padding: 6px;
+            border: 1px solid rgba(200, 170, 120, 0.06);
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 400;
+            color: #d4c09a;
+            background: rgba(40, 32, 26, 0.50);
+            border-radius: 4px;
+            transition: all 0.15s ease;
+            font-family: 'Times New Roman', 'Georgia', 'Noto Serif SC', 'Noto Serif JP', 'Noto Serif', serif;
+            text-shadow: 0 0 6px rgba(200, 170, 120, 0.05);
+            cursor: default;
+            user-select: none;
+            position: relative;
+        }
+
+        /* 字符悬浮效果 — 如烛光掠过 */
+        .cell:hover {
+            background: rgba(200, 170, 120, 0.12);
+            color: #ecd8b0;
+            transform: scale(1.12);
+            z-index: 2;
+            box-shadow: 0 0 20px rgba(200, 170, 120, 0.12), 0 0 4px rgba(200, 170, 120, 0.20);
+            border-radius: 6px;
+        }
+
+        /* 不同语言字符的微色调 (极淡) */
+        .cell.lang-zh {
+            color: #d4c09a;
+        }
+        .cell.lang-ja {
+            color: #c9b89a;
+        }
+        .cell.lang-en {
+            color: #c9b89a;
+        }
+        .cell.lang-ru {
+            color: #c9b89a;
+        }
+        .cell.lang-symbol {
+            color: #b8a088;
+        }
+
+        /* ===== 底部控制栏 ===== */
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px 20px;
+            position: relative;
+            z-index: 1;
+            border-top: 1px solid rgba(200, 170, 120, 0.12);
+            padding-top: 18px;
+        }
+
+        .btn {
+            background: rgba(200, 170, 120, 0.06);
+            border: 1px solid rgba(200, 170, 120, 0.20);
+            color: #d4c09a;
+            padding: 10px 32px;
+            font-size: 16px;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            letter-spacing: 3px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 30px;
+            background: linear-gradient(135deg, rgba(200, 170, 120, 0.10), transparent 60%);
+            pointer-events: none;
+        }
+
+        .btn:hover {
+            background: rgba(200, 170, 120, 0.14);
+            border-color: rgba(200, 170, 120, 0.40);
+            color: #ecd8b0;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.40), 0 0 30px rgba(200, 170, 120, 0.05);
+        }
+
+        .btn:active {
+            transform: translateY(0px) scale(0.98);
+        }
+
+        .btn .icon {
+            margin-right: 8px;
+            display: inline-block;
+            font-size: 18px;
+        }
+
+        .lang-badge {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: #8a7a6a;
+            letter-spacing: 0.3px;
+        }
+
+        .lang-badge-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .lang-badge-item .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+            opacity: 0.6;
+        }
+
+        .dot-zh {
+            background: #d4c09a;
+        }
+        .dot-ja {
+            background: #c9b89a;
+        }
+        .dot-en {
+            background: #b8a888;
+        }
+        .dot-ru {
+            background: #b8a888;
+        }
+        .dot-symbol {
+            background: #8a7a6a;
+        }
+
+        .lang-badge-item .count {
+            color: #b8a088;
+            font-weight: 300;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 680px) {
+            .library {
+                padding: 18px 14px 18px;
+                border-radius: 20px;
+            }
+
+            .title {
+                font-size: 20px;
+                letter-spacing: 3px;
+            }
+            .title .infinity {
+                font-size: 24px;
+            }
+            .title .sub {
+                font-size: 11px;
+                margin-left: 4px;
+                display: inline-block;
+            }
+
+            .stats {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+
+            .grid {
+                gap: 1.5px;
+                padding: 4px;
+            }
+
+            .cell {
+                font-size: 14px;
+                border-radius: 3px;
+            }
+
+            .cell:hover {
+                transform: scale(1.08);
+            }
+
+            .btn {
+                padding: 8px 20px;
+                font-size: 14px;
+                letter-spacing: 2px;
+            }
+
+            .lang-badge {
+                font-size: 10px;
+                gap: 8px;
+            }
+            .lang-badge-item .dot {
+                width: 6px;
+                height: 6px;
+            }
+        }
+
+        @media (max-width: 460px) {
+            .cell {
+                font-size: 11px;
+            }
+            .grid {
+                gap: 1px;
+                padding: 2px;
+            }
+            .library {
+                padding: 12px 8px 14px;
+            }
+            .header {
+                margin-bottom: 14px;
+                padding-bottom: 10px;
+            }
+            .title {
+                font-size: 16px;
+                letter-spacing: 2px;
+            }
+            .title .infinity {
+                font-size: 18px;
+            }
+            .stats {
+                font-size: 9px;
+                padding: 3px 8px;
+            }
+            .btn {
+                padding: 6px 14px;
+                font-size: 12px;
+                letter-spacing: 1px;
+            }
+            .lang-badge {
+                font-size: 9px;
+                gap: 6px;
+            }
+        }
+
+        /* ===== 入场淡入动画 ===== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .grid .cell {
+            animation: fadeInUp 0.35s ease backwards;
+        }
+
+        .grid .cell:nth-child(1) {
+            animation-delay: 0.00s;
+        }
+        .grid .cell:nth-child(2) {
+            animation-delay: 0.02s;
+        }
+        .grid .cell:nth-child(3) {
+            animation-delay: 0.04s;
+        }
+        .grid .cell:nth-child(4) {
+            animation-delay: 0.06s;
+        }
+        /* 用JS动态设置 delay 更精准，但这里用nth-child + 少量延迟已足够 */
+        /* 通过JS添加 style 来覆盖会更整齐，但此处保留作为后备 */
+
+        /* ===== 滚动条美化 ===== */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.20);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(200, 170, 120, 0.25);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(200, 170, 120, 0.40);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="library" id="app">
+        <!-- 标题 -->
+        <div class="header">
+            <div class="title">
+                <span class="infinity">∞</span> 无限图书馆
+                <span class="sub">· 巴别</span>
+            </div>
+            <div class="stats" id="statsDisplay">
+                📖 <span id="charCount">256</span> 卷
+            </div>
+        </div>
+
+        <!-- 字符网格 16×16 -->
+        <div class="grid" id="gridContainer"></div>
+
+        <!-- 底部 -->
+        <div class="footer">
+            <button class="btn" id="refreshBtn">
+                <span class="icon">⟳</span> 随机生成
+            </button>
+            <div class="lang-badge" id="langBadge">
+                <span class="lang-badge-item">
+                    <span class="dot dot-zh"></span> 中文 <span class="count" id="countZh">0</span>
+                </span>
+                <span class="lang-badge-item">
+                    <span class="dot dot-ja"></span> 日文 <span class="count" id="countJa">0</span>
+                </span>
+                <span class="lang-badge-item">
+                    <span class="dot dot-en"></span> 英文 <span class="count" id="countEn">0</span>
+                </span>
+                <span class="lang-badge-item">
+                    <span class="dot dot-ru"></span> 俄语 <span class="count" id="countRu">0</span>
+                </span>
+                <span class="lang-badge-item">
+                    <span class="dot dot-symbol"></span> 符号 <span class="count" id="countSymbol">0</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        //  1. 字符范围定义 (Unicode 码点)
+        //     - 中文：GB18030 基本区 + 扩展A
+        //     - 日文：平假名 + 片假名 + 日文汉字（共用中文区）
+        //     - 英文：A-Z a-z
+        //     - 俄语：Cyrillic
+        //     - 符号：标点、数学、货币、装饰等
+        // ================================================================
+
+        const RANGES = {
+
+            // ---- 中文 (GB18030) ----
+            // 基本汉字 0x4E00–0x9FA5  (20902 字)
+            // 扩展 A   0x3400–0x4DBF  (6582 字)
+            zh: [
+                [0x4E00, 0x9FA5],
+                [0x3400, 0x4DBF]
+            ],
+
+            // ---- 日文 ----
+            // 平假名 0x3040–0x309F
+            // 片假名 0x30A0–0x30FF
+            ja: [
+                [0x3040, 0x309F],
+                [0x30A0, 0x30FF]
+            ],
+
+            // ---- 英文 ----
+            en: [
+                [0x41, 0x5A], // A-Z
+                [0x61, 0x7A] // a-z
+            ],
+
+            // ---- 俄语 (Cyrillic) ----
+            ru: [
+                [0x0400, 0x04FF]
+            ],
+
+            // ---- 符号 ----
+            // 通用标点、数学符号、货币、箭头、装饰等
+            symbol: [
+                [0x2000, 0x206F], // 一般标点
+                [0x3000, 0x303F], // CJK 符号
+                [0xFF00, 0xFFEF], // 半角/全角
+                [0x2100, 0x214F], // 字母式符号
+                [0x2190, 0x21FF], // 箭头
+                [0x2200, 0x22FF], // 数学符号
+                [0x2300, 0x23FF], // 杂项技术
+                [0x25A0, 0x25FF], // 几何形状
+                [0x2600, 0x26FF], // 杂项符号
+                [0x2700, 0x27BF], // 装饰符号
+                [0x2900, 0x297F], // 补充箭头
+                [0x2B00, 0x2BFF], // 杂项符号和箭头
+                [0xFE30, 0xFE4F], // CJK 兼容
+                [0xFE50, 0xFE6F], // 小标点
+            ]
+        };
+
+        // ================================================================
+        //  2. 工具函数
+        // ================================================================
+
+        /** 从一个码点范围中随机取一个码点 (包含两端) */
+        function randomCodePointFromRange(range) {
+            const [lo, hi] = range;
+            return lo + Math.floor(Math.random() * (hi - lo + 1));
+        }
+
+        /** 从多个范围中随机取一个码点 (等概率选择范围) */
+        function randomCodePointFromRanges(ranges) {
+            const range = ranges[Math.floor(Math.random() * ranges.length)];
+            return randomCodePointFromRange(range);
+        }
+
+        /** 从指定语言中生成 n 个字符 */
+        function generateCharsFromLang(langKey, count) {
+            const ranges = RANGES[langKey];
+            if (!ranges) return [];
+            const result = [];
+            for (let i = 0; i < count; i++) {
+                const cp = randomCodePointFromRanges(ranges);
+                result.push(String.fromCodePoint(cp));
+            }
+            return result;
+        }
+
+        /** 打乱数组 (Fisher–Yates) */
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // ================================================================
+        //  3. 核心生成逻辑
+        // ================================================================
+
+        const TOTAL = 256;
+
+        /**
+         * 生成 256 个字符，按比例混合各语言
+         * 返回: { chars: [], stats: { zh, ja, en, ru, symbol } }
+         */
+        function generateMixedChars() {
+            // 比例分配 (总计 256)
+            const proportions = {
+                zh: 0.38, // 中文 38%  ≈ 97
+                ja: 0.12, // 日文 12%  ≈ 31
+                en: 0.20, // 英文 20%  ≈ 51
+                ru: 0.10, // 俄语 10%  ≈ 26
+                symbol: 0.20 // 符号 20%  ≈ 51
+            };
+
+            // 计算实际数量 (四舍五入保证总和为256)
+            let counts = {};
+            let totalAssigned = 0;
+            const keys = Object.keys(proportions);
+            for (let i = 0; i < keys.length; i++) {
+                const key = keys[i];
+                if (i === keys.length - 1) {
+                    counts[key] = TOTAL - totalAssigned;
+                } else {
+                    counts[key] = Math.round(proportions[key] * TOTAL);
+                    totalAssigned += counts[key];
+                }
+            }
+
+            // 微调确保总和正好 256
+            let sum = Object.values(counts).reduce((a, b) => a + b, 0);
+            if (sum !== TOTAL) {
+                // 把差额补到中文上 (或符号上)
+                const diff = TOTAL - sum;
+                counts.zh += diff;
+            }
+
+            // 生成各语言字符
+            let allChars = [];
+            const stats = { zh: 0, ja: 0, en: 0, ru: 0, symbol: 0 };
+
+            for (const [lang, count] of Object.entries(counts)) {
+                const chars = generateCharsFromLang(lang, count);
+                allChars = allChars.concat(chars);
+                stats[lang] = chars.length;
+            }
+
+            // 打乱顺序 (让字符混合均匀)
+            shuffleArray(allChars);
+
+            // 如果因为某些原因长度不对，裁剪或补齐
+            if (allChars.length > TOTAL) {
+                allChars = allChars.slice(0, TOTAL);
+            } else if (allChars.length < TOTAL) {
+                // 补全 (从中文里补)
+                const extra = generateCharsFromLang('zh', TOTAL - allChars.length);
+                allChars = allChars.concat(extra);
+                stats.zh += extra.length;
+            }
+
+            return { chars: allChars, stats };
+        }
+
+        // ================================================================
+        //  4. 渲染
+        // ================================================================
+
+        const grid = document.getElementById('gridContainer');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        // 统计显示元素
+        const countEls = {
+            zh: document.getElementById('countZh'),
+            ja: document.getElementById('countJa'),
+            en: document.getElementById('countEn'),
+            ru: document.getElementById('countRu'),
+            symbol: document.getElementById('countSymbol')
+        };
+        const charCountEl = document.getElementById('charCount');
+
+        /** 渲染字符网格 */
+        function renderGrid(chars, stats) {
+            // 清空
+            grid.innerHTML = '';
+
+            // 每个字符一个 cell
+            for (let i = 0; i < chars.length; i++) {
+                const ch = chars[i];
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+
+                // 根据语言添加 class (用于 hover 色调微差)
+                // 简化：通过判断字符所属范围来标记，但这里我们用传入的 stats 无法精确到每个字符
+                // 所以用简单方式：在生成时记录每个字符的语言? 为了性能，我们重新判断一次 (但仅作样式微调)
+                // 或者直接不加 lang class，保持统一
+                // 我们使用一个更简单的方法：根据 Unicode 码点粗略分类
+                const cp = ch.codePointAt(0);
+                if (cp >= 0x4E00 && cp <= 0x9FA5 || cp >= 0x3400 && cp <= 0x4DBF || cp >= 0x20000 && cp <= 0x2A6DF) {
+                    cell.classList.add('lang-zh');
+                } else if (cp >= 0x3040 && cp <= 0x309F || cp >= 0x30A0 && cp <= 0x30FF) {
+                    cell.classList.add('lang-ja');
+                } else if (cp >= 0x41 && cp <= 0x5A || cp >= 0x61 && cp <= 0x7A) {
+                    cell.classList.add('lang-en');
+                } else if (cp >= 0x0400 && cp <= 0x04FF) {
+                    cell.classList.add('lang-ru');
+                } else {
+                    cell.classList.add('lang-symbol');
+                }
+
+                cell.textContent = ch;
+                // 设置动画延迟 (0–0.3s 分散)
+                const delay = (i % 64) * 0.004 + Math.floor(i / 64) * 0.012;
+                cell.style.animationDelay = delay + 's';
+                grid.appendChild(cell);
+            }
+
+            // 更新统计
+            charCountEl.textContent = chars.length;
+            for (const [lang, count] of Object.entries(stats)) {
+                if (countEls[lang]) {
+                    countEls[lang].textContent = count;
+                }
+            }
+        }
+
+        // ================================================================
+        //  5. 刷新逻辑
+        // ================================================================
+
+        function refreshLibrary() {
+            const { chars, stats } = generateMixedChars();
+            renderGrid(chars, stats);
+        }
+
+        // ================================================================
+        //  6. 初始化 & 事件绑定
+        // ================================================================
+
+        refreshBtn.addEventListener('click', refreshLibrary);
+
+        // 页面加载时自动生成
+        document.addEventListener('DOMContentLoaded', refreshLibrary);
+
+        // 键盘快捷键: R 键刷新
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' || e.key === 'R') {
+                if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+                    e.preventDefault();
+                    refreshLibrary();
+                }
+            }
+        });
+
+        // 响应式：窗口尺寸变化时，重新计算格子大小 (无需额外操作，CSS 自动适应)
+        console.log('∞ 无限图书馆已开启 · 每次随机 256 个字符，包含中文(GB18030)、日文、英文、俄语、符号');
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,2704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📱 保护手机 - 快乐值系统</title>
+    <style>
+        /* ===== 全局重置 & 基础 ===== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0b0e1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+            margin: 0;
+            background-image: radial-gradient(ellipse at 30% 20%, #1a1f35 0%, #0b0e1a 70%);
+        }
+
+        #game {
+            max-width: 460px;
+            width: 100%;
+            background: linear-gradient(145deg, #141a2b, #1a2138);
+            border-radius: 40px 40px 32px 32px;
+            padding: 20px 20px 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            position: relative;
+            transition: opacity 0.2s;
+        }
+
+        /* ===== 难度选择覆盖层 ===== */
+        #menu-overlay {
+            display: flex;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            z-index: 40;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        #menu-overlay.hidden {
+            display: none;
+        }
+
+        #menu-overlay .logo {
+            font-size: 64px;
+            margin-bottom: 8px;
+        }
+        #menu-overlay .title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #f7e9a0;
+            margin-bottom: 6px;
+        }
+        #menu-overlay .sub {
+            font-size: 16px;
+            color: #9aacd8;
+            margin-bottom: 24px;
+        }
+        .difficulty-btn {
+            padding: 14px 32px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #b8c7e6;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            width: 200px;
+            margin: 6px 0;
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .difficulty-btn:active {
+            transform: scale(0.95);
+        }
+        .difficulty-btn.easy {
+            border-color: #7bff9e;
+            color: #7bff9e;
+        }
+        .difficulty-btn.easy:hover {
+            background: rgba(123, 255, 158, 0.1);
+        }
+        .difficulty-btn.normal {
+            border-color: #8fcbff;
+            color: #8fcbff;
+        }
+        .difficulty-btn.normal:hover {
+            background: rgba(100, 180, 255, 0.1);
+        }
+        .difficulty-btn.hard {
+            border-color: #ff7b89;
+            color: #ff7b89;
+        }
+        .difficulty-btn.hard:hover {
+            background: rgba(255, 80, 80, 0.1);
+        }
+        .difficulty-btn .desc {
+            font-size: 12px;
+            font-weight: 400;
+            opacity: 0.6;
+            display: block;
+        }
+
+        /* ===== 顶部状态栏 ===== */
+        #status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 4px 14px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            flex-wrap: wrap;
+            gap: 6px 0;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #b8c7e6;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px 12px 4px 10px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            letter-spacing: 0.3px;
+        }
+
+        .status-item .emoji {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        #time-display {
+            color: #f7e9a0;
+            font-size: 18px;
+            font-weight: 700;
+            min-width: 56px;
+            text-align: center;
+        }
+
+        #lives-display {
+            color: #ff7b89;
+            font-size: 17px;
+        }
+
+        /* ===== 快乐值进度条 ===== */
+        #happiness-wrap {
+            width: 100%;
+            margin: 8px 0 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 4px;
+        }
+
+        #happiness-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #9aacd8;
+            white-space: nowrap;
+            min-width: 36px;
+        }
+
+        #happiness-track {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #happiness-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #f7e9a0, #ffb07c, #ff7b89);
+            transition: width 0.3s ease;
+        }
+
+        #happiness-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #9aacd8;
+            min-width: 36px;
+            text-align: right;
+        }
+
+        /* ===== 警觉值进度条 ===== */
+        #alertness-wrap {
+            width: 100%;
+            margin: 4px 0 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 4px;
+        }
+
+        #alertness-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #9aacd8;
+            white-space: nowrap;
+            min-width: 36px;
+        }
+
+        #alertness-track {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #alertness-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #7bff9e, #f7e9a0, #ff7b89);
+            transition: width 0.3s ease, background 0.3s ease;
+        }
+
+        #alertness-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #9aacd8;
+            min-width: 36px;
+            text-align: right;
+        }
+
+        /* ===== 场景区域 ===== */
+        #scene {
+            position: relative;
+            padding: 18px 12px 14px;
+            margin: 14px 0 12px;
+            background: radial-gradient(ellipse at 50% 80%, #1e2742, #11172b);
+            border-radius: 28px;
+            min-height: 170px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: inset 0 8px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        #scene.danger {
+            border-color: rgba(255, 80, 80, 0.3);
+            box-shadow: inset 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 50, 50, 0.08);
+        }
+
+        /* 房间布局 */
+        .room-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 6px 10px;
+            width: 100%;
+            max-width: 360px;
+            justify-items: center;
+            align-items: center;
+        }
+
+        .room-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            padding: 6px 4px;
+            border-radius: 16px;
+            transition: all 0.25s;
+            position: relative;
+            min-width: 50px;
+            min-height: 56px;
+        }
+
+        .room-item .sub {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            font-weight: 400;
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .room-item .sub.active {
+            color: #f7e9a0;
+            background: rgba(247, 233, 160, 0.12);
+        }
+
+        .room-item .sub.danger {
+            color: #ff7b89;
+            background: rgba(255, 80, 80, 0.15);
+            animation: pulse-text 0.6s ease-in-out infinite alternate;
+        }
+
+        .room-item .sub.success {
+            color: #7bff9e;
+            background: rgba(123, 255, 158, 0.12);
+        }
+
+        /* 床 */
+        #bed-cell {
+            grid-column: 1;
+            grid-row: 1 / 3;
+            font-size: 38px;
+        }
+
+        /* 手机 */
+        #phone-cell {
+            grid-column: 2;
+            grid-row: 1;
+            font-size: 40px;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        #phone-cell:active {
+            transform: scale(0.92);
+        }
+        #phone-cell.playing {
+            animation: glow-phone 1.2s ease-in-out infinite alternate;
+        }
+        #phone-cell.hidden {
+            opacity: 0.3;
+            filter: grayscale(0.8);
+        }
+        #phone-cell.ringing {
+            animation: ring-phone 0.3s ease-in-out infinite alternate;
+        }
+
+        /* 玩家 */
+        #player-cell {
+            grid-column: 2;
+            grid-row: 2;
+            font-size: 38px;
+        }
+        #player-cell.hidden-away {
+            opacity: 0.25;
+            filter: grayscale(0.6);
+        }
+
+        /* 门 - 左门 (父母) */
+        #door-left {
+            grid-column: 3;
+            grid-row: 1 / 3;
+            font-size: 32px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #door-left:active {
+            transform: scale(0.92);
+        }
+        #door-left.shaking {
+            animation: shake-door 0.3s ease-in-out infinite alternate;
+        }
+        #door-left .sub {
+            cursor: pointer;
+        }
+        .door-lock-progress {
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-top: 2px;
+            overflow: hidden;
+        }
+        .door-lock-progress .bar {
+            height: 100%;
+            width: 0%;
+            background: #f7e9a0;
+            border-radius: 4px;
+            transition: width 0.1s;
+        }
+
+        /* 右门 (爷奶) - 困难模式专用 */
+        #door-right {
+            grid-column: 4;
+            grid-row: 1 / 3;
+            font-size: 32px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: none;
+        }
+        #door-right:active {
+            transform: scale(0.92);
+        }
+        #door-right.shaking {
+            animation: shake-door 0.3s ease-in-out infinite alternate;
+        }
+        #door-right .sub {
+            cursor: pointer;
+        }
+        .hard-mode #door-right {
+            display: flex;
+        }
+        .hard-mode .room-grid {
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+        }
+        .room-grid {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+        .hard-mode .room-grid {
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+        }
+
+        #parents-cell {
+            grid-column: 3;
+            grid-row: 3;
+            font-size: 34px;
+            transition: all 0.5s;
+            min-height: 50px;
+        }
+        .hard-mode #parents-cell {
+            grid-column: 3 / 5;
+        }
+
+        #window-cell {
+            grid-column: 1;
+            grid-row: 3;
+            font-size: 28px;
+            opacity: 0.4;
+        }
+
+        /* ===== 提示信息 ===== */
+        #message-area {
+            margin-top: 10px;
+            padding: 8px 14px;
+            min-height: 44px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 40px;
+            text-align: center;
+            font-size: 15px;
+            color: #9aacd8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            width: 100%;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+            transition: all 0.25s;
+        }
+
+        #message-area .highlight {
+            color: #f7e9a0;
+            font-weight: 600;
+        }
+
+        #message-area .danger-text {
+            color: #ff7b89;
+            font-weight: 600;
+            animation: pulse-text 0.5s ease-in-out infinite alternate;
+        }
+
+        #message-area .success-text {
+            color: #7bff9e;
+            font-weight: 600;
+        }
+
+        /* ===== 操作按钮 ===== */
+        #actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 8px;
+            margin: 12px 0 10px;
+        }
+
+        .action-btn {
+            padding: 12px 4px;
+            border: none;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            color: #b8c7e6;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            font-family: inherit;
+            line-height: 1.3;
+            min-height: 56px;
+            justify-content: center;
+        }
+
+        .action-btn .emoji {
+            font-size: 22px;
+            line-height: 1;
+        }
+        .action-btn .label {
+            font-size: 11px;
+            opacity: 0.7;
+            font-weight: 400;
+        }
+
+        .action-btn:active {
+            transform: scale(0.94);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.3;
+            transform: none;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+        }
+
+        .action-btn.primary {
+            background: rgba(100, 180, 255, 0.12);
+            border-color: rgba(100, 180, 255, 0.15);
+            color: #8fcbff;
+        }
+        .action-btn.primary:active {
+            background: rgba(100, 180, 255, 0.2);
+        }
+
+        .action-btn.danger {
+            background: rgba(255, 80, 80, 0.12);
+            border-color: rgba(255, 80, 80, 0.15);
+            color: #ff7b89;
+        }
+        .action-btn.danger:active {
+            background: rgba(255, 80, 80, 0.2);
+        }
+
+        .action-btn.success {
+            background: rgba(123, 255, 158, 0.08);
+            border-color: rgba(123, 255, 158, 0.12);
+            color: #7bff9e;
+        }
+        .action-btn.success:active {
+            background: rgba(123, 255, 158, 0.15);
+        }
+
+        .action-btn.warning {
+            background: rgba(255, 200, 100, 0.08);
+            border-color: rgba(255, 200, 100, 0.12);
+            color: #f7e9a0;
+        }
+        .action-btn.warning:active {
+            background: rgba(255, 200, 100, 0.15);
+        }
+
+        /* ===== QTE 覆盖层 ===== */
+        #qte-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            border-radius: 28px;
+            z-index: 20;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #qte-overlay.active {
+            display: flex;
+        }
+
+        #qte-title {
+            color: #f7e9a0;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        #qte-subtitle {
+            color: #9aacd8;
+            font-size: 13px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+
+        #qte-sequence {
+            display: flex;
+            gap: 16px;
+            margin: 8px 0 16px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .qte-arrow {
+            font-size: 44px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.15s;
+            color: #6a7ca0;
+            font-weight: 300;
+        }
+
+        .qte-arrow.active {
+            border-color: #f7e9a0;
+            color: #f7e9a0;
+            background: rgba(247, 233, 160, 0.1);
+            box-shadow: 0 0 20px rgba(247, 233, 160, 0.08);
+            transform: scale(1.05);
+        }
+
+        .qte-arrow.done {
+            border-color: #7bff9e;
+            color: #7bff9e;
+            background: rgba(123, 255, 158, 0.08);
+        }
+
+        .qte-arrow.wrong {
+            border-color: #ff7b89;
+            color: #ff7b89;
+            background: rgba(255, 80, 80, 0.15);
+            animation: shake-wrong 0.3s;
+        }
+
+        #qte-timer {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 4px 0 12px;
+        }
+
+        #qte-timer-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #ff7b89, #f7e9a0);
+            border-radius: 10px;
+            transition: width 0.05s linear;
+        }
+
+        #qte-result {
+            font-size: 15px;
+            font-weight: 600;
+            min-height: 28px;
+            color: #9aacd8;
+        }
+
+        /* ===== 手机响铃覆盖层 ===== */
+        #ring-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(200, 50, 50, 0.2);
+            backdrop-filter: blur(4px);
+            border-radius: 28px;
+            z-index: 15;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: ring-pulse 0.5s ease-in-out infinite alternate;
+        }
+
+        #ring-overlay.active {
+            display: flex;
+        }
+
+        #ring-overlay .ring-icon {
+            font-size: 64px;
+            margin-bottom: 8px;
+            animation: ring-phone 0.3s ease-in-out infinite alternate;
+        }
+
+        #ring-overlay .ring-text {
+            color: #fff;
+            font-size: 22px;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        #ring-overlay .ring-sub {
+            color: #ffb07c;
+            font-size: 16px;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        #ring-timer {
+            width: 160px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        #ring-timer-bar {
+            height: 100%;
+            width: 100%;
+            background: #ff7b89;
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+
+        /* ===== 锁门动作覆盖层 ===== */
+        #lock-action-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+            border-radius: 28px;
+            z-index: 18;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #lock-action-overlay.active {
+            display: flex;
+        }
+
+        #lock-action-overlay .lock-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        #lock-action-overlay .lock-text {
+            color: #f7e9a0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        #lock-action-overlay .lock-sub {
+            color: #9aacd8;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        #lock-action-progress {
+            width: 200px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+        #lock-action-progress .bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #f7e9a0, #ffb07c);
+            border-radius: 10px;
+            transition: width 0.1s;
+        }
+
+        /* ===== 游戏结束 / 胜利 覆盖层 ===== */
+        #game-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 40px;
+            z-index: 30;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 24px;
+            text-align: center;
+        }
+
+        #game-overlay.active {
+            display: flex;
+        }
+
+        #game-overlay .big-emoji {
+            font-size: 72px;
+            margin-bottom: 12px;
+        }
+
+        #game-overlay .title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #f7e9a0;
+            margin-bottom: 6px;
+        }
+
+        #game-overlay .subtitle {
+            font-size: 16px;
+            color: #9aacd8;
+            margin-bottom: 6px;
+            max-width: 280px;
+        }
+
+        #game-overlay .detail {
+            font-size: 14px;
+            color: #6a7ca0;
+            margin-bottom: 20px;
+        }
+
+        #game-overlay .restart-btn {
+            padding: 14px 44px;
+            border: none;
+            border-radius: 40px;
+            background: linear-gradient(135deg, #f7e9a0, #e8c87a);
+            color: #1a2138;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 20px rgba(247, 233, 160, 0.2);
+        }
+
+        #game-overlay .restart-btn:active {
+            transform: scale(0.95);
+        }
+
+        #game-overlay .restart-btn:hover {
+            box-shadow: 0 6px 30px rgba(247, 233, 160, 0.3);
+        }
+
+        /* ===== 动画 ===== */
+        @keyframes glow-phone {
+            0% {
+                filter: drop-shadow(0 0 8px rgba(100, 180, 255, 0.3));
+                transform: scale(1);
+            }
+            100% {
+                filter: drop-shadow(0 0 24px rgba(100, 180, 255, 0.6));
+                transform: scale(1.04);
+            }
+        }
+
+        @keyframes ring-phone {
+            0% {
+                transform: rotate(-8deg) scale(1);
+                filter: drop-shadow(0 0 10px rgba(255, 80, 80, 0.8));
+            }
+            100% {
+                transform: rotate(8deg) scale(1.08);
+                filter: drop-shadow(0 0 30px rgba(255, 80, 80, 1));
+            }
+        }
+
+        @keyframes ring-pulse {
+            0% {
+                background: rgba(200, 50, 50, 0.15);
+            }
+            100% {
+                background: rgba(200, 50, 50, 0.35);
+            }
+        }
+
+        @keyframes shake-door {
+            0% {
+                transform: rotate(0deg) translateX(0);
+            }
+            100% {
+                transform: rotate(4deg) translateX(4px);
+            }
+        }
+
+        @keyframes pulse-text {
+            0% {
+                opacity: 0.6;
+                transform: scale(0.98);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1.02);
+            }
+        }
+
+        @keyframes shake-wrong {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-8px);
+            }
+            75% {
+                transform: translateX(8px);
+            }
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 420px) {
+            #game {
+                padding: 14px 14px 18px;
+                border-radius: 28px;
+            }
+            #game-overlay {
+                border-radius: 28px;
+            }
+            #qte-overlay {
+                border-radius: 28px;
+            }
+            #ring-overlay {
+                border-radius: 28px;
+            }
+            #lock-action-overlay {
+                border-radius: 28px;
+            }
+            .status-item {
+                font-size: 13px;
+                padding: 3px 8px 3px 6px;
+            }
+            .status-item .emoji {
+                font-size: 15px;
+            }
+            #time-display {
+                font-size: 16px;
+                min-width: 44px;
+            }
+            #happiness-wrap {
+                margin: 4px 0 2px;
+            }
+            #happiness-label {
+                font-size: 11px;
+                min-width: 28px;
+            }
+            #happiness-text {
+                font-size: 11px;
+                min-width: 28px;
+            }
+            #alertness-wrap {
+                margin: 2px 0 2px;
+            }
+            #alertness-label {
+                font-size: 11px;
+                min-width: 28px;
+            }
+            #alertness-text {
+                font-size: 11px;
+                min-width: 28px;
+            }
+            .room-item {
+                font-size: 28px;
+                min-height: 44px;
+                min-width: 40px;
+            }
+            .room-item .sub {
+                font-size: 10px;
+            }
+            #bed-cell {
+                font-size: 32px;
+            }
+            #phone-cell {
+                font-size: 34px;
+            }
+            #player-cell {
+                font-size: 32px;
+            }
+            #door-left {
+                font-size: 28px;
+            }
+            #door-right {
+                font-size: 28px;
+            }
+            #parents-cell {
+                font-size: 28px;
+            }
+            #scene {
+                padding: 12px 8px 10px;
+                min-height: 140px;
+            }
+            .action-btn {
+                font-size: 13px;
+                padding: 10px 2px;
+                min-height: 48px;
+                border-radius: 12px;
+            }
+            .action-btn .emoji {
+                font-size: 18px;
+            }
+            .action-btn .label {
+                font-size: 10px;
+            }
+            #message-area {
+                font-size: 13px;
+                padding: 6px 12px;
+                min-height: 36px;
+            }
+            #qte-sequence {
+                gap: 10px;
+                padding: 8px 12px;
+            }
+            .qte-arrow {
+                font-size: 34px;
+                width: 48px;
+                height: 48px;
+            }
+            #game-overlay .big-emoji {
+                font-size: 56px;
+            }
+            #game-overlay .title {
+                font-size: 22px;
+            }
+            .room-grid {
+                gap: 4px 6px;
+                max-width: 300px;
+            }
+            .hard-mode .room-grid {
+                max-width: 340px;
+            }
+            #ring-overlay .ring-icon {
+                font-size: 48px;
+            }
+            #ring-overlay .ring-text {
+                font-size: 18px;
+            }
+            #ring-overlay .ring-sub {
+                font-size: 14px;
+            }
+            #lock-action-overlay .lock-icon {
+                font-size: 36px;
+            }
+            #lock-action-overlay .lock-text {
+                font-size: 16px;
+            }
+            #lock-action-progress {
+                width: 140px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .room-item {
+                font-size: 24px;
+                min-height: 38px;
+                min-width: 34px;
+            }
+            #phone-cell {
+                font-size: 28px;
+            }
+            #door-left {
+                font-size: 24px;
+            }
+            #door-right {
+                font-size: 24px;
+            }
+            #bed-cell {
+                font-size: 28px;
+            }
+            #player-cell {
+                font-size: 28px;
+            }
+            #parents-cell {
+                font-size: 24px;
+            }
+            .room-grid {
+                max-width: 260px;
+                gap: 2px 4px;
+            }
+            .hard-mode .room-grid {
+                max-width: 290px;
+            }
+            .action-btn {
+                font-size: 11px;
+                padding: 8px 2px;
+                min-height: 40px;
+            }
+            .action-btn .emoji {
+                font-size: 16px;
+            }
+            #qte-sequence {
+                gap: 6px;
+                padding: 6px 8px;
+            }
+            .qte-arrow {
+                font-size: 28px;
+                width: 40px;
+                height: 40px;
+            }
+            #status-bar {
+                padding-bottom: 10px;
+            }
+            .status-item {
+                font-size: 11px;
+                padding: 2px 6px;
+            }
+            #time-display {
+                font-size: 14px;
+                min-width: 38px;
+            }
+            #happiness-label {
+                font-size: 10px;
+                min-width: 24px;
+            }
+            #happiness-text {
+                font-size: 10px;
+                min-width: 24px;
+            }
+            #alertness-label {
+                font-size: 10px;
+                min-width: 24px;
+            }
+            #alertness-text {
+                font-size: 10px;
+                min-width: 24px;
+            }
+        }
+
+        /* ===== 工具类 ===== */
+        .hidden {
+            display: none !important;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gap-4 {
+            gap: 4px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .mt-4 {
+            margin-top: 4px;
+        }
+        .mb-4 {
+            margin-bottom: 4px;
+        }
+        .w-full {
+            width: 100%;
+        }
+
+        /* ===== 滚动条美化 ===== */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        kbd {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #f7e9a0;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game">
+
+        <!-- ===== 难度选择菜单 ===== -->
+        <div id="menu-overlay">
+            <div class="logo">📱</div>
+            <div class="title">保护手机</div>
+            <div class="sub">选择难度开始游戏</div>
+            <button class="difficulty-btn easy" data-diff="easy">
+                <span>😊 简单</span>
+                <span class="desc">只有妈妈 · 间隔长</span>
+            </button>
+            <button class="difficulty-btn normal" data-diff="normal">
+                <span>😐 普通</span>
+                <span class="desc">父母都在 · 普通间隔</span>
+            </button>
+            <button class="difficulty-btn hard" data-diff="hard">
+                <span>😈 困难</span>
+                <span class="desc">双门 · 锁门5秒 · 持续30秒</span>
+            </button>
+        </div>
+
+        <!-- ===== 状态栏 ===== -->
+        <div id="status-bar">
+            <div class="status-item">
+                <span class="emoji">🌙</span>
+                <span id="time-display">22:00</span>
+            </div>
+            <div class="status-item" id="door-status-wrap">
+                <span class="emoji" id="door-icon">🔓</span>
+                <span id="door-status">未锁</span>
+            </div>
+            <div class="status-item">
+                <span class="emoji">❤️</span>
+                <span id="lives-display">❤️❤️❤️</span>
+            </div>
+        </div>
+
+        <!-- ===== 快乐值进度条 ===== -->
+        <div id="happiness-wrap">
+            <span id="happiness-label">😊</span>
+            <div id="happiness-track">
+                <div id="happiness-bar" style="width:0%"></div>
+            </div>
+            <span id="happiness-text">0%</span>
+        </div>
+
+        <!-- ===== 警觉值进度条 ===== -->
+        <div id="alertness-wrap">
+            <span id="alertness-label">⚠️</span>
+            <div id="alertness-track">
+                <div id="alertness-bar" style="width:0%"></div>
+            </div>
+            <span id="alertness-text">0%</span>
+        </div>
+
+        <!-- ===== 场景 ===== -->
+        <div id="scene">
+            <div class="room-grid" id="room-grid">
+                <!-- 床 -->
+                <div id="bed-cell" class="room-item">
+                    🛏️
+                    <span class="sub">床</span>
+                </div>
+
+                <!-- 手机 -->
+                <div id="phone-cell" class="room-item playing" title="点击切换玩/藏">
+                    📱
+                    <span class="sub active" id="phone-status">📱 玩手机</span>
+                </div>
+
+                <!-- 玩家 -->
+                <div id="player-cell" class="room-item">
+                    🧑
+                    <span class="sub" id="player-status">😴 睡觉</span>
+                </div>
+
+                <!-- 左门 (父母) -->
+                <div id="door-left" class="room-item" title="点击锁门/开门 (左门)">
+                    🚪
+                    <span class="sub" id="door-left-label">🔓 未锁</span>
+                    <div class="door-lock-progress" id="door-left-progress"><div class="bar" id="door-left-progress-bar"></div></div>
+                </div>
+
+                <!-- 右门 (爷奶) - 困难模式显示 -->
+                <div id="door-right" class="room-item" title="点击锁门/开门 (右门)">
+                    🚪
+                    <span class="sub" id="door-right-label">🔓 未锁</span>
+                    <div class="door-lock-progress" id="door-right-progress"><div class="bar" id="door-right-progress-bar"></div></div>
+                </div>
+
+                <!-- 父母/爷奶 显示 -->
+                <div id="parents-cell" class="room-item">
+                    <span id="parents-emoji">🌫️</span>
+                    <span class="sub" id="parents-status">远离</span>
+                </div>
+
+                <!-- 窗户 -->
+                <div id="window-cell" class="room-item">
+                    🌙
+                    <span class="sub">窗外</span>
+                </div>
+            </div>
+
+            <!-- 消息区域 -->
+            <div id="message-area">
+                <span>🕹️ 玩手机到 <span class="highlight">24:00</span> 胜利！</span>
+            </div>
+
+            <!-- ===== 手机响铃覆盖层 ===== -->
+            <div id="ring-overlay">
+                <div class="ring-icon">📢</div>
+                <div class="ring-text">手机响了！</div>
+                <div class="ring-sub">按 <kbd>X</kbd> 静音</div>
+                <div id="ring-timer">
+                    <div id="ring-timer-bar" style="width:100%"></div>
+                </div>
+            </div>
+
+            <!-- ===== QTE 覆盖层 ===== -->
+            <div id="qte-overlay">
+                <div id="qte-title">🙈 藏手机！</div>
+                <div id="qte-subtitle">按顺序点击方向键</div>
+                <div id="qte-sequence"></div>
+                <div id="qte-timer"><div id="qte-timer-bar" style="width:100%"></div></div>
+                <div id="qte-result"></div>
+            </div>
+
+            <!-- ===== 锁门动作覆盖层 ===== -->
+            <div id="lock-action-overlay">
+                <div class="lock-icon">🔒</div>
+                <div class="lock-text">正在锁门...</div>
+                <div class="lock-sub">请等待 <span id="lock-action-remain">5</span> 秒</div>
+                <div id="lock-action-progress"><div class="bar" id="lock-action-bar"></div></div>
+            </div>
+
+            <!-- ===== 游戏结束覆盖层 ===== -->
+            <div id="game-overlay">
+                <div class="big-emoji" id="result-emoji">😭</div>
+                <div class="title" id="result-title">被抓到了！</div>
+                <div class="subtitle" id="result-sub">手机被没收了...</div>
+                <div class="detail" id="result-detail">坚持了 0 分钟</div>
+                <button class="restart-btn" id="restart-btn">🔄 再来一次</button>
+            </div>
+        </div>
+
+        <!-- ===== 操作按钮 ===== -->
+        <div id="actions">
+            <button class="action-btn primary" id="btn-play" title="玩手机">
+                <span class="emoji">📱</span>
+                <span class="label">玩手机</span>
+            </button>
+            <button class="action-btn danger" id="btn-hide" title="藏手机 (QTE)">
+                <span class="emoji">🙈</span>
+                <span class="label">藏手机</span>
+            </button>
+            <button class="action-btn warning" id="btn-lock-left" title="锁左门">
+                <span class="emoji">🔒</span>
+                <span class="label">锁左门</span>
+            </button>
+            <button class="action-btn" id="btn-unlock-left" title="开左门">
+                <span class="emoji">🔓</span>
+                <span class="label">开左门</span>
+            </button>
+            <button class="action-btn warning" id="btn-lock-right" title="锁右门" style="display:none;">
+                <span class="emoji">🔒</span>
+                <span class="label">锁右门</span>
+            </button>
+            <button class="action-btn" id="btn-unlock-right" title="开右门" style="display:none;">
+                <span class="emoji">🔓</span>
+                <span class="label">开右门</span>
+            </button>
+        </div>
+
+        <!-- 底部小提示 -->
+        <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.15);padding-top:10px;letter-spacing:0.5px;">
+            ⌨️ 1玩 2藏 · 3锁左门 4开左门 · 5锁右门 6开右门 · ↑↓←→ QTE · <kbd>X</kbd> 静音
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  游戏主逻辑 - 快乐值系统
+        // ============================================================
+
+        (function() {
+            'use strict';
+
+            // ---------- DOM 引用 ----------
+            const $ = id => document.getElementById(id);
+            const timeDisplay = $('time-display');
+            const livesDisplay = $('lives-display');
+            const scene = $('scene');
+            const phoneCell = $('phone-cell');
+            const phoneStatus = $('phone-status');
+            const playerCell = $('player-cell');
+            const playerStatus = $('player-status');
+            const parentsEmoji = $('parents-emoji');
+            const parentsStatus = $('parents-status');
+            const messageArea = $('message-area');
+            const qteOverlay = $('qte-overlay');
+            const qteSequence = $('qte-sequence');
+            const qteTimerBar = $('qte-timer-bar');
+            const qteResult = $('qte-result');
+            const qteTitle = $('qte-title');
+            const qteSubtitle = $('qte-subtitle');
+            const gameOverlay = $('game-overlay');
+            const resultEmoji = $('result-emoji');
+            const resultTitle = $('result-title');
+            const resultSub = $('result-sub');
+            const resultDetail = $('result-detail');
+            const restartBtn = $('restart-btn');
+            const ringOverlay = $('ring-overlay');
+            const ringTimerBar = $('ring-timer-bar');
+            const alertnessBar = $('alertness-bar');
+            const alertnessText = $('alertness-text');
+            const happinessBar = $('happiness-bar');
+            const happinessText = $('happiness-text');
+            const menuOverlay = $('menu-overlay');
+            const roomGrid = $('room-grid');
+            const doorLeft = $('door-left');
+            const doorRight = $('door-right');
+            const doorLeftLabel = $('door-left-label');
+            const doorRightLabel = $('door-right-label');
+            const doorLeftProgress = $('door-left-progress-bar');
+            const doorRightProgress = $('door-right-progress-bar');
+            const lockActionOverlay = $('lock-action-overlay');
+            const lockActionBar = $('lock-action-bar');
+            const lockActionRemain = $('lock-action-remain');
+
+            const btnPlay = $('btn-play');
+            const btnHide = $('btn-hide');
+            const btnLockLeft = $('btn-lock-left');
+            const btnUnlockLeft = $('btn-unlock-left');
+            const btnLockRight = $('btn-lock-right');
+            const btnUnlockRight = $('btn-unlock-right');
+
+            // ---------- 游戏状态 ----------
+            const STATE = {
+                difficulty: 'normal',
+                time: 22 * 60,
+                targetTime: 24 * 60,
+                phone: 'playing',
+                lives: 3,
+                alertness: 0,
+                happiness: 0,
+                happinessTarget: 80, // 需要达到80%快乐值
+                happinessDecayTimer: 0,
+                alertnessDecayTimer: 0,
+                gameOver: false,
+                gameWon: false,
+                _gameOverTriggered: false,
+
+                doors: {
+                    left: { locked: false, lockTimer: 0, lockActionTimer: 0, lockActionActive: false, progress: 0 },
+                    right: { locked: false, lockTimer: 0, lockActionTimer: 0, lockActionActive: false, progress: 0 }
+                },
+                LOCK_ACTION_DURATION: 5,
+                LOCK_DURATION: 30,
+
+                parents: 'away',
+                parentsTimer: 0,
+                parentsCooldown: 0,
+                parentsType: 'parent',
+                targetDoor: 'left',
+
+                doorTimer: 0,
+                DOOR_OPEN_TIME: 5,
+                parentsStayTimer: 0,
+                PARENTS_STAY_TIME: 2.5,
+                doorAlertTimer: 0,
+                DOOR_ALERT_INTERVAL: 2.0,
+                DOOR_ALERT_AMOUNT: 5,
+
+                qteActive: false,
+                qteSequence: [],
+                qteIndex: 0,
+                qteTimeLeft: 0,
+                qteMaxTime: 3.0,
+                qteSuccess: false,
+                qteDone: false,
+
+                ringActive: false,
+                ringTimer: 0,
+                ringCooldown: 0,
+                ringDuration: 3.0,
+                ringMinInterval: 8,
+                ringMaxInterval: 15,
+                ringMuted: false,
+
+                loopInterval: null,
+                deltaTime: 0,
+                lastTimestamp: 0,
+                timeSpeed: 2.0,
+
+                parentsMinInterval: 18,
+                parentsMaxInterval: 38,
+
+                doorCooldown: 0,
+                paused: false,
+                lockActionGlobal: false,
+
+                // 快乐值积累速度 (每秒增加)
+                happinessRate: 3.0, // 每秒 +3%
+            };
+
+            // ---------- 工具函数 ----------
+            function formatTime(minutes) {
+                const h = Math.floor(minutes / 60);
+                const m = Math.floor(minutes % 60);
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            }
+
+            function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+            function randomRange(min, max) { return Math.random() * (max - min) + min; }
+
+            function randomInt(min, max) { return Math.floor(randomRange(min, max + 1)); }
+
+            function generateQTESequence(length = 4) {
+                const dirs = ['↑', '↓', '←', '→'];
+                const map = { '↑': 'ArrowUp', '↓': 'ArrowDown', '←': 'ArrowLeft', '→': 'ArrowRight' };
+                const seq = [];
+                for (let i = 0; i < length; i++) {
+                    const d = dirs[randomInt(0, 3)];
+                    seq.push({ emoji: d, key: map[d] });
+                }
+                return seq;
+            }
+
+            // ---------- 快乐值系统 ----------
+            function updateHappinessUI() {
+                const val = STATE.happiness;
+                happinessBar.style.width = val + '%';
+                happinessText.textContent = Math.round(val) + '%';
+                // 颜色变化：绿->黄->红
+                if (val < 40) {
+                    happinessBar.style.background = 'linear-gradient(90deg, #7bff9e, #a0f7a0)';
+                } else if (val < 70) {
+                    happinessBar.style.background = 'linear-gradient(90deg, #f7e9a0, #f7d07a)';
+                } else {
+                    happinessBar.style.background = 'linear-gradient(90deg, #ffb07c, #ff7b89)';
+                }
+            }
+
+            function addHappiness(amount) {
+                if (STATE.gameOver || STATE.gameWon) return;
+                STATE.happiness = clamp(STATE.happiness + amount, 0, 100);
+                updateHappinessUI();
+            }
+
+            // 快乐值自然衰减 (当不玩手机时缓慢下降)
+            function decayHappiness(dt) {
+                if (STATE.gameOver || STATE.gameWon || STATE.paused) return;
+                if (STATE.phone === 'playing') {
+                    // 玩手机时增加快乐值
+                    addHappiness(STATE.happinessRate * dt);
+                } else {
+                    // 不玩手机时缓慢衰减
+                    STATE.happinessDecayTimer += dt;
+                    if (STATE.happinessDecayTimer >= 5.0) {
+                        STATE.happinessDecayTimer = 0;
+                        if (STATE.happiness > 0) {
+                            STATE.happiness = clamp(STATE.happiness - 2, 0, 100);
+                            updateHappinessUI();
+                        }
+                    }
+                }
+            }
+
+            // ---------- 警觉值 ----------
+            function addAlertness(amount, reason = '') {
+                if (STATE.gameOver || STATE.gameWon) return;
+                STATE.alertness = clamp(STATE.alertness + amount, 0, 100);
+                updateAlertnessUI();
+                if (STATE.alertness >= 100) {
+                    STATE.alertness = 100;
+                    gameOver('⚠️ 父母起疑了！', '警觉值达到100%... 手机被没收！', '😰');
+                }
+                if (reason && !STATE.gameOver) {
+                    setMessage(`⚠️ 警觉 +${amount}% (${reason})`, 'danger-text');
+                }
+            }
+
+            function updateAlertnessUI() {
+                const val = STATE.alertness;
+                alertnessBar.style.width = val + '%';
+                alertnessText.textContent = Math.round(val) + '%';
+                if (val < 30) {
+                    alertnessBar.style.background = 'linear-gradient(90deg, #7bff9e, #a0f7a0)';
+                } else if (val < 60) {
+                    alertnessBar.style.background = 'linear-gradient(90deg, #f7e9a0, #f7d07a)';
+                } else {
+                    alertnessBar.style.background = 'linear-gradient(90deg, #ffb07c, #ff7b89)';
+                }
+            }
+
+            function decayAlertness(dt) {
+                if (STATE.gameOver || STATE.gameWon || STATE.paused) return;
+                STATE.alertnessDecayTimer += dt;
+                if (STATE.alertnessDecayTimer >= 10.0) {
+                    STATE.alertnessDecayTimer = 0;
+                    if (STATE.alertness > 0) {
+                        STATE.alertness = clamp(STATE.alertness - 3, 0, 100);
+                        updateAlertnessUI();
+                    }
+                }
+            }
+
+            // ---------- 门管理 ----------
+            function getDoor(doorKey) { return STATE.doors[doorKey] || STATE.doors.left; }
+
+            function isDoorLocked(doorKey) {
+                const d = getDoor(doorKey);
+                return d.locked && d.lockTimer > 0;
+            }
+
+            function lockDoor(doorKey) {
+                if (STATE.gameOver || STATE.gameWon || STATE.paused) return false;
+                const d = getDoor(doorKey);
+                if (d.lockActionActive) return false;
+                if (isDoorLocked(doorKey)) return false;
+                d.lockActionActive = true;
+                d.lockActionTimer = STATE.LOCK_ACTION_DURATION;
+                d.progress = 0;
+                showLockAction(doorKey);
+                playSound('lock_start');
+                return true;
+            }
+
+            function updateLockAction(dt) {
+                for (const key of ['left', 'right']) {
+                    const d = STATE.doors[key];
+                    if (d.lockActionActive) {
+                        d.lockActionTimer -= dt;
+                        d.progress = 1 - (d.lockActionTimer / STATE.LOCK_ACTION_DURATION);
+                        if (key === 'left') {
+                            doorLeftProgress.style.width = (d.progress * 100) + '%';
+                        } else {
+                            doorRightProgress.style.width = (d.progress * 100) + '%';
+                        }
+                        if (STATE.lockActionGlobal && lockActionOverlay.classList.contains('active')) {
+                            lockActionBar.style.width = (d.progress * 100) + '%';
+                            lockActionRemain.textContent = Math.ceil(d.lockActionTimer);
+                        }
+                        if (d.lockActionTimer <= 0) {
+                            d.lockActionActive = false;
+                            d.locked = true;
+                            d.lockTimer = STATE.LOCK_DURATION;
+                            d.progress = 1;
+                            if (key === 'left') {
+                                doorLeftProgress.style.width = '100%';
+                            } else {
+                                doorRightProgress.style.width = '100%';
+                            }
+                            hideLockAction();
+                            playSound('lock');
+                            setMessage(`🔒 ${key === 'left' ? '左' : '右'}门已锁 (30秒)`, '');
+                            updateDoorUI();
+                            updateUI();
+                        }
+                    }
+                }
+            }
+
+            function showLockAction(doorKey) {
+                STATE.lockActionGlobal = true;
+                lockActionOverlay.classList.add('active');
+                lockActionBar.style.width = '0%';
+                lockActionRemain.textContent = STATE.LOCK_ACTION_DURATION;
+                STATE.paused = true;
+                updateUI();
+            }
+
+            function hideLockAction() {
+                STATE.lockActionGlobal = false;
+                lockActionOverlay.classList.remove('active');
+                STATE.paused = false;
+                updateUI();
+            }
+
+            function updateDoorTimers(dt) {
+                for (const key of ['left', 'right']) {
+                    const d = STATE.doors[key];
+                    if (d.locked && d.lockTimer > 0) {
+                        d.lockTimer -= dt;
+                        if (d.lockTimer <= 0) {
+                            d.locked = false;
+                            d.lockTimer = 0;
+                            if (key === 'left') {
+                                doorLeftProgress.style.width = '0%';
+                            } else {
+                                doorRightProgress.style.width = '0%';
+                            }
+                            setMessage(`🔓 ${key === 'left' ? '左' : '右'}门自动解锁`, '');
+                            playSound('unlock');
+                            updateDoorUI();
+                            updateUI();
+                        }
+                    }
+                }
+            }
+
+            function updateDoorUI() {
+                const left = STATE.doors.left;
+                const right = STATE.doors.right;
+                doorLeftLabel.textContent = left.locked ? '🔒 已锁' : '🔓 未锁';
+                doorRightLabel.textContent = right.locked ? '🔒 已锁' : '🔓 未锁';
+                if (!left.lockActionActive) {
+                    doorLeftProgress.style.width = (left.locked && left.lockTimer > 0) ? '100%' : '0%';
+                }
+                if (!right.lockActionActive) {
+                    doorRightProgress.style.width = (right.locked && right.lockTimer > 0) ? '100%' : '0%';
+                }
+                doorLeft.classList.toggle('shaking', STATE.parents === 'atDoor' && STATE.targetDoor === 'left');
+                doorRight.classList.toggle('shaking', STATE.parents === 'atDoor' && STATE.targetDoor === 'right');
+            }
+
+            // ---------- 父母AI ----------
+            function updateParents(dt) {
+                if (STATE.gameOver || STATE.gameWon) return;
+
+                const p = STATE.parents;
+
+                if (p === 'away') {
+                    STATE.parentsTimer += dt;
+                    if (STATE.parentsTimer >= STATE.parentsCooldown) {
+                        if (STATE.difficulty === 'easy') {
+                            STATE.parentsType = 'parent';
+                            STATE.targetDoor = 'left';
+                        } else if (STATE.difficulty === 'normal') {
+                            STATE.parentsType = 'parent';
+                            STATE.targetDoor = 'left';
+                        } else {
+                            if (Math.random() < 0.5) {
+                                STATE.parentsType = 'parent';
+                                STATE.targetDoor = 'left';
+                            } else {
+                                STATE.parentsType = 'grandparent';
+                                STATE.targetDoor = 'right';
+                            }
+                        }
+                        STATE.parents = 'approaching';
+                        STATE.parentsTimer = 0;
+                        STATE.parentsCooldown = 0;
+                        playSound('footstep');
+                        const who = STATE.parentsType === 'parent' ? '👨👩 爸爸妈妈' : '👴👵 爷爷奶奶';
+                        const doorSide = STATE.targetDoor === 'left' ? '左门' : '右门';
+                        setMessage(`👣 ${who} 来了（${doorSide}）！`, 'danger-text');
+                        updateUI();
+                        updateMessage();
+                    }
+                } else if (p === 'approaching') {
+                    STATE.parentsTimer += dt;
+                    if (STATE.parentsTimer >= 2.5) {
+                        STATE.parents = 'atDoor';
+                        STATE.parentsTimer = 0;
+                        STATE.doorAlertTimer = 0;
+                        const doorKey = STATE.targetDoor;
+                        const d = STATE.doors[doorKey];
+                        if (d.locked && d.lockTimer > 0) {
+                            STATE.doorTimer = STATE.DOOR_OPEN_TIME;
+                            setMessage(`🚪 ${doorKey === 'left' ? '左' : '右'}门锁着！父母在开门...`, 'danger-text');
+                            playSound('knock');
+                        } else {
+                            STATE.parents = 'inside';
+                            STATE.parentsTimer = 0;
+                            handleParentsEnter();
+                        }
+                        updateUI();
+                        updateMessage();
+                    }
+                } else if (p === 'atDoor') {
+                    const doorKey = STATE.targetDoor;
+                    const d = STATE.doors[doorKey];
+                    if (d.locked && d.lockTimer > 0) {
+                        STATE.doorAlertTimer += dt;
+                        if (STATE.doorAlertTimer >= STATE.DOOR_ALERT_INTERVAL) {
+                            STATE.doorAlertTimer = 0;
+                            addAlertness(STATE.DOOR_ALERT_AMOUNT, `父母发现${doorKey === 'left' ? '左' : '右'}门锁了`);
+                        }
+                        STATE.doorTimer -= dt;
+                        if (STATE.doorTimer <= 0) {
+                            STATE.doorTimer = 0;
+                            STATE.parents = 'inside';
+                            STATE.parentsTimer = 0;
+                            handleParentsEnter();
+                            updateUI();
+                            updateMessage();
+                        }
+                    } else {
+                        STATE.parents = 'inside';
+                        STATE.parentsTimer = 0;
+                        handleParentsEnter();
+                        updateUI();
+                        updateMessage();
+                    }
+                } else if (p === 'inside') {
+                    STATE.parentsTimer += dt;
+                    if (STATE.phone === 'playing') {
+                        addAlertness(30, '父母发现手机没藏！');
+                        if (STATE.alertness >= 100) return;
+                    }
+                    if (STATE.parentsTimer >= STATE.PARENTS_STAY_TIME) {
+                        STATE.parents = 'leaving';
+                        STATE.parentsTimer = 0;
+                        if (STATE.phone === 'hidden') {
+                            playSound('safe');
+                            setMessage('✅ 父母没发现手机！安全了！', 'success-text');
+                        } else {
+                            if (!STATE.gameOver) {
+                                addAlertness(30, '父母发现手机没藏！');
+                            }
+                        }
+                        setTimeout(() => {
+                            if (!STATE.gameOver && !STATE.gameWon) {
+                                STATE.parents = 'away';
+                                STATE.parentsTimer = 0;
+                                let minInt, maxInt;
+                                if (STATE.difficulty === 'easy') {
+                                    minInt = 35;
+                                    maxInt = 55;
+                                } else if (STATE.difficulty === 'normal') {
+                                    minInt = 18;
+                                    maxInt = 38;
+                                } else {
+                                    minInt = 14;
+                                    maxInt = 30;
+                                }
+                                STATE.parentsCooldown = randomRange(minInt, maxInt);
+                                updateUI();
+                                updateMessage();
+                                if (STATE.phone === 'hidden') {
+                                    setMessage('🙈 手机还藏着，点击「玩手机」继续 📱', '');
+                                }
+                            }
+                        }, 1200);
+                        updateUI();
+                        updateMessage();
+                    }
+                } else if (p === 'leaving') {
+                    // wait
+                }
+            }
+
+            function handleParentsEnter() {
+                if (STATE.phone === 'hidden') {
+                    setMessage('✅ 手机藏好了！父母检查中...', 'success-text');
+                    playSound('safe');
+                } else {
+                    setMessage('⚠️ 手机没藏！父母发现了！！', 'danger-text');
+                    playSound('caught');
+                    addAlertness(30, '父母发现手机没藏！');
+                }
+                updateUI();
+            }
+
+            // ---------- 响铃系统 ----------
+            function startRing() {
+                if (STATE.gameOver || STATE.gameWon || STATE.paused) return;
+                if (STATE.phone !== 'hidden') return;
+                if (STATE.ringActive) return;
+                if (STATE.qteActive) return;
+
+                STATE.ringActive = true;
+                STATE.ringMuted = false;
+                STATE.ringTimer = STATE.ringDuration;
+                ringOverlay.classList.add('active');
+                ringTimerBar.style.width = '100%';
+                phoneCell.classList.add('ringing');
+                playSound('ring');
+                setMessage('📢 手机响了！按 X 静音！', 'danger-text');
+                updateUI();
+            }
+
+            function updateRing(dt) {
+                if (!STATE.ringActive) return;
+                STATE.ringTimer -= dt;
+                const pct = Math.max(0, (STATE.ringTimer / STATE.ringDuration) * 100);
+                ringTimerBar.style.width = pct + '%';
+
+                if (STATE.ringTimer <= 0 && !STATE.ringMuted) {
+                    STATE.ringActive = false;
+                    ringOverlay.classList.remove('active');
+                    phoneCell.classList.remove('ringing');
+                    if (STATE.parents === 'inside') {
+                        addAlertness(20, '手机响铃 (父母在房间)');
+                    } else {
+                        addAlertness(10, '手机响铃');
+                    }
+                    STATE.ringCooldown = randomRange(STATE.ringMinInterval, STATE.ringMaxInterval);
+                    updateUI();
+                    updateMessage();
+                } else if (STATE.ringTimer <= 0 && STATE.ringMuted) {
+                    STATE.ringActive = false;
+                    ringOverlay.classList.remove('active');
+                    phoneCell.classList.remove('ringing');
+                    setMessage('🔇 手机已静音！', 'success-text');
+                    STATE.ringCooldown = randomRange(STATE.ringMinInterval, STATE.ringMaxInterval);
+                    updateUI();
+                    updateMessage();
+                }
+            }
+
+            function muteRing() {
+                if (!STATE.ringActive) return;
+                if (STATE.ringMuted) return;
+                STATE.ringMuted = true;
+                STATE.ringTimer = 0;
+                ringOverlay.classList.remove('active');
+                phoneCell.classList.remove('ringing');
+                playSound('mute');
+                setMessage('🔇 成功静音！', 'success-text');
+                updateUI();
+                updateMessage();
+            }
+
+            function updateRingCooldown(dt) {
+                if (STATE.ringActive) return;
+                if (STATE.phone !== 'hidden') return;
+                if (STATE.gameOver || STATE.gameWon) return;
+
+                STATE.ringCooldown -= dt;
+                if (STATE.ringCooldown <= 0) {
+                    startRing();
+                }
+            }
+
+            // ---------- UI 更新 ----------
+            function updateUI() {
+                timeDisplay.textContent = formatTime(STATE.time);
+                livesDisplay.textContent = '❤️'.repeat(STATE.lives) + '🖤'.repeat(3 - STATE.lives);
+
+                const isPlaying = STATE.phone === 'playing';
+                phoneCell.className = 'room-item' + (isPlaying ? ' playing' : ' hidden');
+                if (STATE.ringActive) phoneCell.classList.add('ringing');
+                phoneStatus.textContent = isPlaying ? '📱 玩手机' : '🙈 已藏好';
+                phoneStatus.className = 'sub' + (isPlaying ? ' active' : ' success');
+
+                playerCell.className = 'room-item' + (STATE.phone === 'hidden' ? ' hidden-away' : '');
+                playerStatus.textContent = STATE.phone === 'hidden' ? '🙈 藏手机' : '😴 睡觉';
+                playerStatus.className = 'sub' + (STATE.phone === 'hidden' ? ' success' : '');
+
+                const p = STATE.parents;
+                let emoji = '🌫️';
+                let statusText = '远离';
+                let subClass = '';
+                if (p === 'away') {
+                    emoji = '🌫️';
+                    statusText = '远离';
+                } else if (p === 'approaching') {
+                    const who = STATE.parentsType === 'parent' ? '👨👩' : '👴👵';
+                    emoji = '👣';
+                    statusText = who + ' 接近中!';
+                    subClass = 'danger';
+                } else if (p === 'atDoor') {
+                    const who = STATE.parentsType === 'parent' ? '👨👩' : '👴👵';
+                    emoji = who;
+                    statusText = '在门口!';
+                    subClass = 'danger';
+                } else if (p === 'inside') {
+                    const who = STATE.parentsType === 'parent' ? '👨👩' : '👴👵';
+                    emoji = who;
+                    statusText = '已进入!';
+                    subClass = 'danger';
+                } else if (p === 'leaving') {
+                    const who = STATE.parentsType === 'parent' ? '👨👩' : '👴👵';
+                    emoji = who;
+                    statusText = '离开中';
+                }
+                parentsEmoji.textContent = emoji;
+                parentsStatus.textContent = statusText;
+                parentsStatus.className = 'sub' + (subClass ? ' ' + subClass : '');
+
+                scene.className = (p === 'approaching' || p === 'atDoor' || p === 'inside') ? 'scene danger' : '';
+
+                updateDoorUI();
+
+                const isGameOver = STATE.gameOver || STATE.gameWon;
+                const isQTE = STATE.qteActive;
+                const isLockAction = STATE.lockActionGlobal;
+                const isParentsInside = STATE.parents === 'inside' || STATE.parents === 'leaving';
+                const isParentsAtDoor = STATE.parents === 'atDoor';
+                const isRing = STATE.ringActive;
+
+                const disableAll = isGameOver || isQTE || isLockAction || STATE.paused || isRing;
+                const disableHide = disableAll || STATE.phone === 'hidden' || isParentsInside;
+                const disablePlay = disableAll || isParentsInside;
+
+                btnPlay.disabled = disablePlay;
+                btnHide.disabled = disableHide;
+
+                const leftLocked = STATE.doors.left.locked && STATE.doors.left.lockTimer > 0;
+                const rightLocked = STATE.doors.right.locked && STATE.doors.right.lockTimer > 0;
+                const leftAction = STATE.doors.left.lockActionActive;
+                const rightAction = STATE.doors.right.lockActionActive;
+
+                btnLockLeft.disabled = disableAll || leftLocked || leftAction || STATE.doorCooldown > 0;
+                btnUnlockLeft.disabled = disableAll || !leftLocked || leftAction || STATE.doorCooldown > 0;
+                if (STATE.difficulty === 'hard') {
+                    btnLockRight.style.display = 'flex';
+                    btnUnlockRight.style.display = 'flex';
+                    btnLockRight.disabled = disableAll || rightLocked || rightAction || STATE.doorCooldown > 0;
+                    btnUnlockRight.disabled = disableAll || !rightLocked || rightAction || STATE.doorCooldown > 0;
+                } else {
+                    btnLockRight.style.display = 'none';
+                    btnUnlockRight.style.display = 'none';
+                }
+
+                if ((isParentsAtDoor || isParentsInside) && !isGameOver && !isQTE && !isLockAction && !STATE.paused && !isRing &&
+                    STATE.phone !== 'hidden') {
+                    btnHide.disabled = false;
+                }
+
+                updateHappinessUI();
+                updateAlertnessUI();
+                updateMessage();
+            }
+
+            function updateMessage() {
+                const p = STATE.parents;
+                let msg = '';
+
+                if (STATE.gameOver) {
+                    msg = '💀 游戏结束...';
+                } else if (STATE.gameWon) {
+                    msg = '🎉 胜利！你玩到了12点！';
+                } else if (STATE.qteActive) {
+                    msg = '⌨️ 快速按方向键藏手机！';
+                } else if (STATE.ringActive) {
+                    msg = '📢 手机响了！按 X 静音！';
+                } else if (p === 'away') {
+                    if (STATE.phone === 'playing') {
+                        msg = '📱 玩手机增加快乐值！注意父母！';
+                    } else {
+                        msg = '🙈 手机藏好了，快乐值会缓慢下降...';
+                    }
+                } else if (p === 'approaching') {
+                    const who = STATE.parentsType === 'parent' ? '👨👩 爸爸妈妈' : '👴👵 爷爷奶奶';
+                    const doorSide = STATE.targetDoor === 'left' ? '左门' : '右门';
+                    msg = `👣 ${who} 来了（${doorSide}）！快藏手机！`;
+                } else if (p === 'atDoor') {
+                    const doorKey = STATE.targetDoor;
+                    const d = STATE.doors[doorKey];
+                    if (d.locked && d.lockTimer > 0) {
+                        const remain = Math.ceil(STATE.doorTimer);
+                        msg = `🚪 父母在开门... 剩余 ${remain}秒！警觉值上升中！`;
+                    } else {
+                        msg = '🚪 门没锁！父母要进来了！！';
+                    }
+                } else if (p === 'inside') {
+                    if (STATE.phone === 'hidden') {
+                        msg = '✅ 手机藏好了！父母检查中... 小心手机响！';
+                    } else {
+                        msg = '⚠️ 手机没藏！父母发现了！！';
+                    }
+                } else if (p === 'leaving') {
+                    msg = '👋 父母走了... 安全了！';
+                } else {
+                    msg = '🕹️ 玩手机到 24:00 并达到80%快乐值！';
+                }
+
+                if (!STATE.gameOver && !STATE.gameWon && STATE.phone === 'hidden' && p === 'away' && !STATE.ringActive) {
+                    msg = '🙈 手机已藏好，点击「玩手机」继续 📱';
+                }
+
+                messageArea.innerHTML = msg;
+            }
+
+            function setMessage(text, className = '') {
+                const span = document.createElement('span');
+                span.textContent = text;
+                if (className) span.className = className;
+                messageArea.innerHTML = '';
+                messageArea.appendChild(span);
+            }
+
+            // ---------- 核心循环 ----------
+            function startGame(difficulty) {
+                STATE.difficulty = difficulty;
+
+                STATE.time = 22 * 60;
+                STATE.phone = 'playing';
+                STATE.lives = 3;
+                STATE.alertness = 0;
+                STATE.happiness = 0;
+                STATE.happinessDecayTimer = 0;
+                STATE.alertnessDecayTimer = 0;
+                STATE.gameOver = false;
+                STATE.gameWon = false;
+                STATE._gameOverTriggered = false;
+                STATE.parents = 'away';
+                STATE.parentsTimer = 0;
+                STATE.parentsCooldown = 0;
+                STATE.doorTimer = 0;
+                STATE.parentsStayTimer = 0;
+                STATE.doorAlertTimer = 0;
+                STATE.qteActive = false;
+                STATE.qteSequence = [];
+                STATE.qteIndex = 0;
+                STATE.qteTimeLeft = 0;
+                STATE.qteSuccess = false;
+                STATE.qteDone = false;
+                STATE.ringActive = false;
+                STATE.ringTimer = 0;
+                STATE.ringCooldown = randomRange(STATE.ringMinInterval, STATE.ringMaxInterval);
+                STATE.ringMuted = false;
+                STATE.doorCooldown = 0;
+                STATE.paused = false;
+                STATE.lockActionGlobal = false;
+                STATE.doors.left = { locked: false, lockTimer: 0, lockActionTimer: 0, lockActionActive: false, progress: 0 };
+                STATE.doors.right = { locked: false, lockTimer: 0, lockActionTimer: 0, lockActionActive: false, progress: 0 };
+
+                let minInt, maxInt;
+                if (difficulty === 'easy') {
+                    minInt = 35;
+                    maxInt = 55;
+                } else if (difficulty === 'normal') {
+                    minInt = 18;
+                    maxInt = 38;
+                } else {
+                    minInt = 14;
+                    maxInt = 30;
+                }
+                STATE.parentsCooldown = randomRange(minInt, maxInt);
+
+                menuOverlay.classList.add('hidden');
+                gameOverlay.classList.remove('active');
+                qteOverlay.classList.remove('active');
+                ringOverlay.classList.remove('active');
+                lockActionOverlay.classList.remove('active');
+                phoneCell.classList.remove('ringing');
+
+                if (difficulty === 'hard') {
+                    document.getElementById('game').classList.add('hard-mode');
+                    roomGrid.style.gridTemplateColumns = '1fr 1fr 1fr 1fr';
+                } else {
+                    document.getElementById('game').classList.remove('hard-mode');
+                    roomGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+                }
+
+                updateUI();
+                updateMessage();
+
+                if (STATE.loopInterval) {
+                    cancelAnimationFrame(STATE.loopInterval);
+                }
+                STATE.lastTimestamp = performance.now();
+                loop();
+            }
+
+            function loop() {
+                if (STATE.gameOver || STATE.gameWon) {
+                    updateUI();
+                    STATE.loopInterval = requestAnimationFrame(loop);
+                    return;
+                }
+
+                const now = performance.now();
+                const dt = Math.min((now - STATE.lastTimestamp) / 1000, 0.05);
+                STATE.lastTimestamp = now;
+                STATE.deltaTime = dt;
+
+                if (!STATE.paused) {
+                    STATE.time += dt / STATE.timeSpeed;
+                    if (STATE.time >= STATE.targetTime) {
+                        STATE.time = STATE.targetTime;
+                        // 检查快乐值是否达标
+                        if (STATE.happiness >= STATE.happinessTarget) {
+                            winGame();
+                        } else {
+                            // 快乐值不足，失败
+                            gameOver('😔 快乐值不足', `只达到 ${Math.round(STATE.happiness)}%，需要 ${STATE.happinessTarget}%`, '😞');
+                        }
+                        updateUI();
+                        STATE.loopInterval = requestAnimationFrame(loop);
+                        return;
+                    }
+
+                    // 快乐值系统
+                    decayHappiness(dt);
+                    // 警觉值衰减
+                    decayAlertness(dt);
+
+                    if (STATE.doorCooldown > 0) {
+                        STATE.doorCooldown -= dt;
+                        if (STATE.doorCooldown < 0) STATE.doorCooldown = 0;
+                    }
+
+                    updateLockAction(dt);
+                    updateDoorTimers(dt);
+
+                    updateParents(dt);
+
+                    updateRingCooldown(dt);
+                    if (!STATE.ringActive) {
+                        updateRing(dt);
+                    } else {
+                        updateRing(dt);
+                    }
+
+                    updateUI();
+                } else {
+                    if (STATE.qteActive) {
+                        updateQTETimer(dt);
+                    }
+                    if (STATE.ringActive) {
+                        updateRing(dt);
+                    }
+                    if (STATE.lockActionGlobal) {
+                        updateLockAction(dt);
+                    }
+                }
+
+                STATE.loopInterval = requestAnimationFrame(loop);
+            }
+
+            // ---------- QTE ----------
+            function startQTE() {
+                if (STATE.qteActive) return;
+                if (STATE.phone === 'hidden') return;
+                if (STATE.gameOver || STATE.gameWon) return;
+                if (STATE.ringActive) return;
+                if (STATE.lockActionGlobal) return;
+
+                STATE.qteActive = true;
+                STATE.paused = true;
+                STATE.qteSuccess = false;
+                STATE.qteDone = false;
+                STATE.qteIndex = 0;
+                STATE.qteTimeLeft = STATE.qteMaxTime;
+                STATE.qteSequence = generateQTESequence(4);
+
+                qteOverlay.classList.add('active');
+                renderQTE();
+                qteResult.textContent = '⏳ 输入方向...';
+                qteTimerBar.style.width = '100%';
+                qteTitle.textContent = '🙈 快速藏手机！';
+                qteSubtitle.textContent = '按顺序点击方向键 (↑↓←→)';
+
+                playSound('qte_start');
+                updateUI();
+            }
+
+            function renderQTE() {
+                qteSequence.innerHTML = '';
+                STATE.qteSequence.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'qte-arrow';
+                    if (index < STATE.qteIndex) div.classList.add('done');
+                    if (index === STATE.qteIndex) div.classList.add('active');
+                    div.textContent = item.emoji;
+                    div.dataset.index = index;
+                    qteSequence.appendChild(div);
+                });
+            }
+
+            function updateQTETimer(dt) {
+                if (!STATE.qteActive) return;
+                STATE.qteTimeLeft -= dt;
+                const pct = Math.max(0, (STATE.qteTimeLeft / STATE.qteMaxTime) * 100);
+                qteTimerBar.style.width = pct + '%';
+
+                if (STATE.qteTimeLeft <= 0 && !STATE.qteDone) {
+                    qteFail('⏰ 时间到！');
+                }
+            }
+
+            function qteInput(key) {
+                if (!STATE.qteActive || STATE.qteDone) return;
+                if (STATE.qteIndex >= STATE.qteSequence.length) return;
+
+                const expected = STATE.qteSequence[STATE.qteIndex];
+                if (key === expected.key) {
+                    STATE.qteIndex++;
+                    renderQTE();
+                    playSound('qte_correct');
+
+                    if (STATE.qteIndex >= STATE.qteSequence.length) {
+                        qteSuccess();
+                    } else {
+                        const arrows = qteSequence.querySelectorAll('.qte-arrow');
+                        arrows.forEach((el, i) => {
+                            el.className = 'qte-arrow';
+                            if (i < STATE.qteIndex) el.classList.add('done');
+                            if (i === STATE.qteIndex) el.classList.add('active');
+                        });
+                    }
+                } else {
+                    qteFail('❌ 按错了！');
+                }
+            }
+
+            function qteSuccess() {
+                if (STATE.qteDone) return;
+                STATE.qteDone = true;
+                STATE.qteSuccess = true;
+                STATE.phone = 'hidden';
+                qteResult.textContent = '✅ 藏好了！';
+                qteResult.style.color = '#7bff9e';
+                playSound('qte_success');
+                STATE.ringCooldown = randomRange(STATE.ringMinInterval, STATE.ringMaxInterval);
+
+                setTimeout(() => {
+                    closeQTE();
+                    setMessage('🙈 手机藏好了！注意手机可能会响！', 'success-text');
+                    updateUI();
+                    updateMessage();
+                }, 600);
+            }
+
+            function qteFail(reason) {
+                if (STATE.qteDone) return;
+                STATE.qteDone = true;
+                STATE.qteSuccess = false;
+                qteResult.textContent = reason || '❌ 藏手机失败！';
+                qteResult.style.color = '#ff7b89';
+                playSound('qte_fail');
+
+                const arrows = qteSequence.querySelectorAll('.qte-arrow');
+                arrows.forEach(el => {
+                    if (!el.classList.contains('done')) {
+                        el.classList.add('wrong');
+                    }
+                });
+
+                setTimeout(() => {
+                    closeQTE();
+                    setMessage('⚠️ 藏手机失败！快再试试！', 'danger-text');
+                    updateUI();
+                    updateMessage();
+                }, 800);
+            }
+
+            function closeQTE() {
+                STATE.qteActive = false;
+                STATE.paused = false;
+                qteOverlay.classList.remove('active');
+                qteResult.style.color = '';
+                updateUI();
+                updateMessage();
+            }
+
+            // ---------- 玩家操作 ----------
+            function actionPlay() {
+                if (STATE.gameOver || STATE.gameWon || STATE.qteActive || STATE.paused || STATE.ringActive || STATE
+                    .lockActionGlobal) return;
+                if (STATE.parents === 'inside' || STATE.parents === 'leaving') return;
+
+                STATE.phone = 'playing';
+                playSound('click');
+                setMessage('📱 玩手机中... 快乐值上升', '');
+                STATE.ringCooldown = randomRange(STATE.ringMinInterval, STATE.ringMaxInterval);
+                if (STATE.ringActive) {
+                    muteRing();
+                }
+                updateUI();
+                updateMessage();
+            }
+
+            function actionHide() {
+                if (STATE.gameOver || STATE.gameWon || STATE.paused || STATE.ringActive || STATE.lockActionGlobal) return;
+                if (STATE.phone === 'hidden') {
+                    setMessage('🙈 手机已经藏好了', '');
+                    return;
+                }
+                startQTE();
+            }
+
+            function actionLock(doorKey) {
+                if (STATE.gameOver || STATE.gameWon || STATE.qteActive || STATE.paused || STATE.ringActive) return;
+                if (STATE.lockActionGlobal) return;
+                const d = STATE.doors[doorKey];
+                if (d.locked && d.lockTimer > 0) return;
+                if (d.lockActionActive) return;
+                if (STATE.doorCooldown > 0) return;
+                lockDoor(doorKey);
+                STATE.doorCooldown = 0.3;
+            }
+
+            function actionUnlock(doorKey) {
+                if (STATE.gameOver || STATE.gameWon || STATE.qteActive || STATE.paused || STATE.ringActive) return;
+                if (STATE.lockActionGlobal) return;
+                const d = STATE.doors[doorKey];
+                if (!d.locked || d.lockTimer <= 0) return;
+                if (d.lockActionActive) return;
+                if (STATE.doorCooldown > 0) return;
+
+                d.locked = false;
+                d.lockTimer = 0;
+                d.progress = 0;
+                if (doorKey === 'left') {
+                    doorLeftProgress.style.width = '0%';
+                } else {
+                    doorRightProgress.style.width = '0%';
+                }
+                STATE.doorCooldown = 0.3;
+                playSound('unlock');
+                setMessage(`🔓 ${doorKey === 'left' ? '左' : '右'}门已打开`, '');
+                updateDoorUI();
+                updateUI();
+                updateMessage();
+
+                if (STATE.parents === 'atDoor' && STATE.targetDoor === doorKey) {
+                    STATE.parents = 'inside';
+                    STATE.parentsTimer = 0;
+                    handleParentsEnter();
+                    updateUI();
+                    updateMessage();
+                }
+            }
+
+            // ---------- 游戏结束 ----------
+            function gameOver(title, sub, emoji) {
+                if (STATE._gameOverTriggered) return;
+                STATE._gameOverTriggered = true;
+                STATE.gameOver = true;
+                STATE.paused = true;
+                if (STATE.loopInterval) {
+                    cancelAnimationFrame(STATE.loopInterval);
+                }
+                const minutes = Math.floor((STATE.time - 22 * 60));
+                resultEmoji.textContent = emoji || '😭';
+                resultTitle.textContent = title || '被抓到了！';
+                resultSub.textContent = sub || '手机被没收了...';
+                resultDetail.textContent = `坚持了 ${minutes} 分钟 · 快乐值 ${Math.round(STATE.happiness)}% · 警觉值 ${Math.round(STATE.alertness)}%`;
+                gameOverlay.classList.add('active');
+                playSound('gameover');
+                ringOverlay.classList.remove('active');
+                phoneCell.classList.remove('ringing');
+                lockActionOverlay.classList.remove('active');
+                updateUI();
+            }
+
+            function winGame() {
+                if (STATE._gameOverTriggered) return;
+                STATE.gameWon = true;
+                STATE.paused = true;
+                if (STATE.loopInterval) {
+                    cancelAnimationFrame(STATE.loopInterval);
+                }
+                resultEmoji.textContent = '🎉';
+                resultTitle.textContent = '胜利！';
+                resultSub.textContent = `你成功玩到了12点！快乐值 ${Math.round(STATE.happiness)}%`;
+                resultDetail.textContent = `👏 太棒了！警觉值 ${Math.round(STATE.alertness)}%`;
+                gameOverlay.classList.add('active');
+                playSound('win');
+                ringOverlay.classList.remove('active');
+                phoneCell.classList.remove('ringing');
+                lockActionOverlay.classList.remove('active');
+                updateUI();
+            }
+
+            // ---------- 键盘 ----------
+            function handleKeydown(e) {
+                const key = e.key;
+
+                if (key === 'x' || key === 'X') {
+                    if (STATE.ringActive) {
+                        e.preventDefault();
+                        muteRing();
+                        return;
+                    }
+                }
+
+                if (STATE.qteActive && !STATE.qteDone) {
+                    const validKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+                    if (validKeys.includes(key)) {
+                        e.preventDefault();
+                        qteInput(key);
+                    }
+                    return;
+                }
+
+                if (STATE.gameOver || STATE.gameWon || STATE.paused || STATE.ringActive || STATE.lockActionGlobal) return;
+
+                switch (key) {
+                    case '1':
+                        actionPlay();
+                        break;
+                    case '2':
+                        actionHide();
+                        break;
+                    case '3':
+                        actionLock('left');
+                        break;
+                    case '4':
+                        actionUnlock('left');
+                        break;
+                    case '5':
+                        if (STATE.difficulty === 'hard') actionLock('right');
+                        break;
+                    case '6':
+                        if (STATE.difficulty === 'hard') actionUnlock('right');
+                        break;
+                }
+            }
+
+            // ---------- 音效 ----------
+            let audioCtx = null;
+
+            function getAudioCtx() {
+                if (!audioCtx) {
+                    try {
+                        audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                    } catch (_) { return null; }
+                }
+                return audioCtx;
+            }
+
+            function playSound(type) {
+                try {
+                    const ctx = getAudioCtx();
+                    if (!ctx) return;
+                    if (ctx.state === 'suspended') {
+                        ctx.resume();
+                    }
+                    const now = ctx.currentTime;
+                    // 简单音效，使用振荡器
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    let freq = 440,
+                        duration = 0.1,
+                        vol = 0.05,
+                        typeOsc = 'sine';
+                    switch (type) {
+                        case 'footstep':
+                            freq = 120;
+                            duration = 0.2;
+                            vol = 0.08;
+                            typeOsc = 'sine';
+                            break;
+                        case 'knock':
+                            freq = 300;
+                            duration = 0.08;
+                            vol = 0.08;
+                            typeOsc = 'square';
+                            break;
+                        case 'enter':
+                            freq = 400;
+                            duration = 0.25;
+                            vol = 0.08;
+                            typeOsc = 'sawtooth';
+                            break;
+                        case 'caught':
+                            freq = 600;
+                            duration = 0.4;
+                            vol = 0.1;
+                            typeOsc = 'square';
+                            break;
+                        case 'safe':
+                            freq = 523;
+                            duration = 0.3;
+                            vol = 0.06;
+                            typeOsc = 'sine';
+                            break;
+                        case 'lock':
+                            freq = 600;
+                            duration = 0.1;
+                            vol = 0.05;
+                            typeOsc = 'square';
+                            break;
+                        case 'lock_start':
+                            freq = 300;
+                            duration = 0.2;
+                            vol = 0.04;
+                            typeOsc = 'sine';
+                            break;
+                        case 'unlock':
+                            freq = 200;
+                            duration = 0.1;
+                            vol = 0.05;
+                            typeOsc = 'square';
+                            break;
+                        case 'ring':
+                            freq = 880;
+                            duration = 0.35;
+                            vol = 0.06;
+                            typeOsc = 'square';
+                            break;
+                        case 'mute':
+                            freq = 600;
+                            duration = 0.12;
+                            vol = 0.04;
+                            typeOsc = 'sine';
+                            break;
+                        case 'qte_start':
+                            freq = 440;
+                            duration = 0.2;
+                            vol = 0.06;
+                            typeOsc = 'sine';
+                            break;
+                        case 'qte_correct':
+                            freq = 880;
+                            duration = 0.06;
+                            vol = 0.05;
+                            typeOsc = 'sine';
+                            break;
+                        case 'qte_fail':
+                            freq = 200;
+                            duration = 0.25;
+                            vol = 0.06;
+                            typeOsc = 'sawtooth';
+                            break;
+                        case 'qte_success':
+                            freq = 659;
+                            duration = 0.1;
+                            vol = 0.05;
+                            typeOsc = 'sine';
+                            break;
+                        case 'gameover':
+                            freq = 400;
+                            duration = 0.3;
+                            vol = 0.08;
+                            typeOsc = 'sawtooth';
+                            break;
+                        case 'win':
+                            freq = 523;
+                            duration = 0.1;
+                            vol = 0.05;
+                            typeOsc = 'sine';
+                            break;
+                        default:
+                            return;
+                    }
+                    osc.type = typeOsc;
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(vol, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + duration);
+                } catch (_) {}
+            }
+
+            // ---------- 事件绑定 ----------
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const diff = btn.dataset.diff;
+                    startGame(diff);
+                });
+            });
+
+            btnPlay.addEventListener('click', actionPlay);
+            btnHide.addEventListener('click', actionHide);
+            btnLockLeft.addEventListener('click', () => actionLock('left'));
+            btnUnlockLeft.addEventListener('click', () => actionUnlock('left'));
+            btnLockRight.addEventListener('click', () => actionLock('right'));
+            btnUnlockRight.addEventListener('click', () => actionUnlock('right'));
+
+            doorLeft.addEventListener('click', () => {
+                if (STATE.doors.left.locked && STATE.doors.left.lockTimer > 0) {
+                    actionUnlock('left');
+                } else {
+                    actionLock('left');
+                }
+            });
+            doorRight.addEventListener('click', () => {
+                if (STATE.doors.right.locked && STATE.doors.right.lockTimer > 0) {
+                    actionUnlock('right');
+                } else {
+                    actionLock('right');
+                }
+            });
+
+            phoneCell.addEventListener('click', () => {
+                if (STATE.phone === 'playing') {
+                    actionHide();
+                } else {
+                    actionPlay();
+                }
+            });
+
+            restartBtn.addEventListener('click', () => {
+                menuOverlay.classList.remove('hidden');
+                gameOverlay.classList.remove('active');
+                if (STATE.loopInterval) {
+                    cancelAnimationFrame(STATE.loopInterval);
+                }
+                document.getElementById('game').classList.remove('hard-mode');
+                roomGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+            });
+
+            document.addEventListener('keydown', handleKeydown);
+            document.addEventListener('dblclick', (e) => e.preventDefault());
+
+            document.addEventListener('touchmove', (e) => {
+                if (e.target.closest('#game')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // 启动菜单
+            menuOverlay.classList.remove('hidden');
+            console.log('📱 保护手机 - 快乐值系统');
+            console.log('🎯 目标：玩手机到12点，快乐值达到80%');
+            console.log('🎮 快捷键: 1玩 2藏 · 3锁左门 4开左门 · 5锁右门 6开右门 · X静音');
+            console.log('⬆️⬇️⬅️➡️ QTE');
+        })();
+    </script>
+
+</body>
+</html>
