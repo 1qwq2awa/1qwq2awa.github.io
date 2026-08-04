@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>瘾君子的一生 - 戒毒宣传</title>
+    <style>
+        /* ===== 全局重置 & 基础 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+            background: #0a0a0a;
+            color: #e0d6c0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            transition: background 0.5s;
+            overflow: hidden;
+        }
+
+        /* ===== 背景动态效果 ===== */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(60, 10, 10, 0.3) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(40, 5, 20, 0.3) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 100%, rgba(80, 0, 0, 0.15) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        /* ===== 主容器 ===== */
+        #app {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 780px;
+            background: linear-gradient(170deg, rgba(20, 15, 15, 0.95), rgba(10, 8, 8, 0.98));
+            border: 1px solid rgba(120, 40, 40, 0.3);
+            border-radius: 24px;
+            padding: 32px 28px 28px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.9),
+                inset 0 1px 0 rgba(180, 80, 80, 0.1),
+                0 0 40px rgba(100, 20, 20, 0.15);
+            backdrop-filter: blur(4px);
+            transition: all 0.3s ease;
+            max-height: 98vh;
+            overflow-y: auto;
+        }
+
+        /* ===== 滚动条美化 ===== */
+        #app::-webkit-scrollbar {
+            width: 4px;
+        }
+        #app::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+        #app::-webkit-scrollbar-thumb {
+            background: rgba(160, 40, 40, 0.5);
+            border-radius: 4px;
+        }
+
+        /* ===== 头部 ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(120, 40, 40, 0.25);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .title {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            background: linear-gradient(180deg, #ff4a4a, #cc2222);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            font-family: 'Special Elite', 'Courier New', monospace;
+        }
+        .title .skull {
+            -webkit-text-fill-color: #cc3333;
+            font-size: 30px;
+            margin-right: 4px;
+        }
+
+        .day-display {
+            font-size: 18px;
+            color: #b0a090;
+            background: rgba(60, 20, 20, 0.4);
+            padding: 6px 18px;
+            border-radius: 30px;
+            border: 1px solid rgba(140, 60, 60, 0.25);
+            font-weight: 600;
+            letter-spacing: 1px;
+            font-family: 'Courier New', monospace;
+        }
+        .day-display span {
+            color: #e8c0a0;
+            font-size: 22px;
+        }
+
+        /* ===== 状态栏 ===== */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 20px;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 16px 18px;
+            border-radius: 16px;
+            border: 1px solid rgba(80, 40, 40, 0.15);
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .status-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: #b0a090;
+        }
+        .status-label .value {
+            color: #e0d0c0;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(40, 30, 30, 0.6);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+        .progress-bar .fill {
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.5s;
+            width: 0%;
+            position: relative;
+        }
+        .progress-bar .fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            border-radius: 20px;
+        }
+
+        /* 不同颜色的进度条 */
+        .health .fill {
+            background: linear-gradient(90deg, #cc2222, #ff6644);
+        }
+        .money .fill {
+            background: linear-gradient(90deg, #2a7a3a, #4caf50);
+        }
+        .addiction .fill {
+            background: linear-gradient(90deg, #8833aa, #cc44cc);
+        }
+        .withdrawal .fill {
+            background: linear-gradient(90deg, #aa6622, #ff8844);
+        }
+
+        /* ===== 日志区域 ===== */
+        .log-area {
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            min-height: 130px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(80, 40, 40, 0.12);
+            position: relative;
+            scroll-behavior: smooth;
+        }
+        .log-area::-webkit-scrollbar {
+            width: 3px;
+        }
+        .log-area::-webkit-scrollbar-thumb {
+            background: rgba(160, 60, 60, 0.3);
+            border-radius: 10px;
+        }
+
+        .log-entry {
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(60, 40, 40, 0.1);
+            color: #d0c0b0;
+            animation: logFade 0.3s ease;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-entry .time-tag {
+            color: #886a5a;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        .log-entry.danger {
+            color: #ff6655;
+            border-left: 3px solid #cc3333;
+            padding-left: 10px;
+        }
+        .log-entry.success {
+            color: #88dd88;
+            border-left: 3px solid #44aa44;
+            padding-left: 10px;
+        }
+        .log-entry.warning {
+            color: #ffbb66;
+            border-left: 3px solid #cc8833;
+            padding-left: 10px;
+        }
+        .log-entry.info {
+            color: #88bbdd;
+            border-left: 3px solid #4488bb;
+            padding-left: 10px;
+        }
+        .log-entry.death {
+            color: #ff2222;
+            font-weight: 700;
+            font-size: 16px;
+            border-left: 3px solid #ff0000;
+            padding-left: 10px;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+
+        @keyframes logFade {
+            0% {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== 按钮区域 ===== */
+        .action-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 4px;
+            justify-content: center;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+            text-transform: uppercase;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            transform: scale(0.98);
+            filter: grayscale(0.6);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7a2a2a, #aa3333);
+            color: #f0e0d0;
+            box-shadow: 0 4px 20px rgba(180, 40, 40, 0.25);
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(200, 50, 50, 0.35);
+            background: linear-gradient(135deg, #8a3a3a, #bb4444);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #5a1a1a, #992222);
+            color: #f0d0c0;
+            box-shadow: 0 4px 20px rgba(160, 30, 30, 0.3);
+        }
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(180, 40, 40, 0.4);
+            background: linear-gradient(135deg, #6a2a2a, #aa3333);
+        }
+
+        .btn-dark {
+            background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+            color: #c0b0a0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .btn-dark:hover:not(:disabled) {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #3a3a3a, #4a4a4a);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #6a5a2a, #aa8833);
+            color: #f0e8d0;
+            box-shadow: 0 4px 20px rgba(160, 120, 40, 0.25);
+        }
+        .btn-gold:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(180, 140, 50, 0.35);
+            background: linear-gradient(135deg, #7a6a3a, #bb9933);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #3a1a4a, #663388);
+            color: #e0d0e8;
+            box-shadow: 0 4px 20px rgba(100, 40, 140, 0.25);
+        }
+        .btn-purple:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(120, 50, 160, 0.35);
+            background: linear-gradient(135deg, #4a2a5a, #774499);
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, #333, #555);
+            color: #eee;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            padding: 14px 40px;
+            flex: 0 1 auto;
+        }
+        .btn-restart:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, #444, #666);
+        }
+
+        /* ===== 戒断反应特效容器 ===== */
+        .effect-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 999;
+            transition: all 0.3s ease;
+        }
+
+        /* ===== 抖动动画 ===== */
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            10% {
+                transform: translate(-4px, 2px) rotate(-0.5deg);
+            }
+            20% {
+                transform: translate(4px, -3px) rotate(0.5deg);
+            }
+            30% {
+                transform: translate(-3px, 4px) rotate(-0.3deg);
+            }
+            40% {
+                transform: translate(3px, -2px) rotate(0.3deg);
+            }
+            50% {
+                transform: translate(-2px, 3px) rotate(-0.2deg);
+            }
+            60% {
+                transform: translate(2px, -4px) rotate(0.2deg);
+            }
+            70% {
+                transform: translate(-4px, 2px) rotate(-0.4deg);
+            }
+            80% {
+                transform: translate(4px, -3px) rotate(0.4deg);
+            }
+            90% {
+                transform: translate(-3px, 1px) rotate(-0.2deg);
+            }
+        }
+        @keyframes shakeHeavy {
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg) scale(1);
+            }
+            15% {
+                transform: translate(-8px, 4px) rotate(-1deg) scale(0.98);
+            }
+            30% {
+                transform: translate(8px, -6px) rotate(1deg) scale(1.01);
+            }
+            45% {
+                transform: translate(-6px, 8px) rotate(-0.8deg) scale(0.99);
+            }
+            60% {
+                transform: translate(6px, -4px) rotate(0.8deg) scale(1.01);
+            }
+            75% {
+                transform: translate(-10px, 6px) rotate(-1.2deg) scale(0.98);
+            }
+            90% {
+                transform: translate(10px, -8px) rotate(1.2deg) scale(1);
+            }
+        }
+
+        .shake-mild {
+            animation: shake 0.6s ease-in-out;
+        }
+        .shake-heavy {
+            animation: shakeHeavy 0.8s ease-in-out;
+        }
+
+        /* ===== 红色覆盖 ===== */
+        .red-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 998;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(180, 0, 0, 0.15) 100%);
+            transition: opacity 0.8s ease;
+            opacity: 0;
+        }
+        .red-overlay.active {
+            opacity: 1;
+        }
+        .red-overlay.heavy {
+            background: radial-gradient(ellipse at center, transparent 30%, rgba(180, 0, 0, 0.35) 100%);
+            opacity: 1;
+        }
+        .red-overlay.critical {
+            background: radial-gradient(ellipse at center, transparent 20%, rgba(200, 0, 0, 0.5) 100%);
+            opacity: 1;
+        }
+
+        /* ===== 模糊效果 ===== */
+        .blur-effect {
+            filter: blur(0px);
+            transition: filter 0.8s ease;
+        }
+        .blur-effect.mild {
+            filter: blur(0.5px);
+        }
+        .blur-effect.medium {
+            filter: blur(1.5px);
+        }
+        .blur-effect.heavy {
+            filter: blur(3px);
+        }
+
+        /* ===== 死亡画面 ===== */
+        .death-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 40px;
+            animation: deathFade 1.2s ease;
+            backdrop-filter: blur(8px);
+        }
+        .death-screen.show {
+            display: flex;
+        }
+
+        @keyframes deathFade {
+            0% {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .death-content {
+            text-align: center;
+            max-width: 600px;
+            animation: deathPulse 3s ease-in-out infinite;
+        }
+        @keyframes deathPulse {
+            0%,
+            100% {
+                text-shadow: 0 0 40px rgba(200, 0, 0, 0.2);
+            }
+            50% {
+                text-shadow: 0 0 80px rgba(200, 0, 0, 0.5), 0 0 120px rgba(200, 0, 0, 0.2);
+            }
+        }
+
+        .death-icon {
+            font-size: 80px;
+            color: #cc2222;
+            margin-bottom: 16px;
+            animation: floatSkull 3s ease-in-out infinite;
+        }
+        @keyframes floatSkull {
+            0%,
+            100% {
+                transform: translateY(0) rotate(-2deg);
+            }
+            50% {
+                transform: translateY(-12px) rotate(2deg);
+            }
+        }
+
+        .death-title {
+            font-size: 44px;
+            font-weight: 900;
+            color: #ff2222;
+            letter-spacing: 6px;
+            margin-bottom: 12px;
+            font-family: 'Special Elite', 'Courier New', monospace;
+        }
+        .death-sub {
+            font-size: 20px;
+            color: #cc8877;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+        .death-stats {
+            font-size: 16px;
+            color: #aa8877;
+            margin: 20px 0 16px;
+            line-height: 2;
+            font-family: 'Courier New', monospace;
+        }
+        .death-stats span {
+            color: #eec0a0;
+            font-weight: 700;
+        }
+        .death-message {
+            font-size: 18px;
+            color: #ccaa88;
+            margin: 24px 0 32px;
+            line-height: 1.8;
+            padding: 20px;
+            border-top: 1px solid rgba(180, 80, 80, 0.2);
+            border-bottom: 1px solid rgba(180, 80, 80, 0.2);
+            font-style: italic;
+        }
+        .death-message strong {
+            color: #ff6644;
+        }
+
+        .btn-restart-death {
+            background: linear-gradient(135deg, #4a1a1a, #882222);
+            color: #f0e0d0;
+            border: none;
+            padding: 16px 50px;
+            font-size: 18px;
+            font-weight: 700;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 30px rgba(180, 30, 30, 0.3);
+        }
+        .btn-restart-death:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 40px rgba(200, 40, 40, 0.5);
+            background: linear-gradient(135deg, #5a2a2a, #993333);
+        }
+
+        /* ===== 阶段指示器 ===== */
+        .phase-indicator {
+            text-align: center;
+            font-size: 14px;
+            color: #887060;
+            padding: 6px 0 10px;
+            letter-spacing: 2px;
+            font-weight: 300;
+            border-bottom: 1px dashed rgba(80, 50, 50, 0.15);
+            margin-bottom: 14px;
+        }
+        .phase-indicator .phase-highlight {
+            color: #d0b090;
+            font-weight: 600;
+            background: rgba(120, 60, 60, 0.2);
+            padding: 2px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 600px) {
+            #app {
+                padding: 20px 14px;
+                border-radius: 16px;
+            }
+            .title {
+                font-size: 20px;
+                letter-spacing: 2px;
+            }
+            .title .skull {
+                font-size: 24px;
+            }
+            .day-display {
+                font-size: 14px;
+                padding: 4px 14px;
+            }
+            .status-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px 14px;
+                padding: 12px 14px;
+            }
+            .status-label {
+                font-size: 11px;
+            }
+            .btn {
+                font-size: 13px;
+                padding: 12px 14px;
+                min-width: 70px;
+            }
+            .log-area {
+                min-height: 100px;
+                max-height: 150px;
+                padding: 10px 12px;
+            }
+            .log-entry {
+                font-size: 12px;
+            }
+            .death-title {
+                font-size: 30px;
+            }
+            .death-icon {
+                font-size: 60px;
+            }
+            .death-sub {
+                font-size: 16px;
+            }
+            .action-area {
+                gap: 8px;
+            }
+            .btn-restart-death {
+                padding: 14px 30px;
+                font-size: 15px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .status-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px 10px;
+                padding: 10px 10px;
+            }
+            .status-label {
+                font-size: 10px;
+            }
+            .btn {
+                font-size: 11px;
+                padding: 10px 8px;
+                min-width: 60px;
+                border-radius: 10px;
+            }
+            .log-entry {
+                font-size: 11px;
+                line-height: 1.4;
+            }
+            #app {
+                padding: 14px 10px;
+            }
+            .header {
+                padding-bottom: 10px;
+                margin-bottom: 12px;
+            }
+            .title {
+                font-size: 17px;
+            }
+            .day-display {
+                font-size: 12px;
+                padding: 3px 10px;
+            }
+        }
+
+        /* ===== 工具类 ===== */
+        .text-center {
+            text-align: center;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mt-12 {
+            margin-top: 12px;
+        }
+        .flex-1 {
+            flex: 1;
+        }
+        .gap-8 {
+            gap: 8px;
+        }
+        .w-full {
+            width: 100%;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* ===== 闪烁提示 ===== */
+        @keyframes blinkWarning {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.2;
+            }
+        }
+        .blink-warning {
+            animation: blinkWarning 0.8s ease-in-out infinite;
+        }
+
+        /* ===== 毒瘾高亮 ===== */
+        .addiction-high {
+            color: #dd66dd !important;
+            text-shadow: 0 0 20px rgba(200, 80, 200, 0.3);
+        }
+        .health-low {
+            color: #ff4444 !important;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 特效叠加层 ===== -->
+    <div class="effect-overlay" id="effectOverlay"></div>
+    <div class="red-overlay" id="redOverlay"></div>
+
+    <!-- ===== 死亡画面 ===== -->
+    <div class="death-screen" id="deathScreen">
+        <div class="death-content">
+            <div class="death-icon">💀</div>
+            <div class="death-title">你死了</div>
+            <div class="death-sub">毒品夺走了你的一切</div>
+            <div class="death-stats">
+                存活了 <span id="deathDays">0</span> 天<br>
+                最终健康值 <span id="deathHealth">0</span>%<br>
+                毒瘾程度 <span id="deathAddiction">0</span>%
+            </div>
+            <div class="death-message" id="deathMessage">
+                <strong>「毒品不会让你解脱，只会让你更快地走向深渊。」</strong>
+            </div>
+            <button class="btn-restart-death" onclick="restartGame()">🔄 重新开始</button>
+        </div>
+    </div>
+
+    <!-- ===== 主应用 ===== -->
+    <div id="app" class="blur-effect">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="title">
+                <span class="skull">☠</span> 瘾君子的一生
+            </div>
+            <div class="day-display">
+                DAY <span id="dayNumber">1</span>
+            </div>
+        </div>
+
+        <!-- 阶段指示 -->
+        <div class="phase-indicator" id="phaseIndicator">
+            🌅 白天 · 出去寻找目标
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-grid">
+            <div class="status-item health">
+                <div class="status-label">
+                    ❤️ 健康 <span class="value" id="healthValue">100%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="fill" id="healthBar" style="width:100%"></div>
+                </div>
+            </div>
+            <div class="status-item money">
+                <div class="status-label">
+                    💰 金钱 <span class="value" id="moneyValue">¥150</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="fill" id="moneyBar" style="width:30%"></div>
+                </div>
+            </div>
+            <div class="status-item addiction">
+                <div class="status-label">
+                    💉 毒瘾 <span class="value" id="addictionValue">15%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="fill" id="addictionBar" style="width:15%"></div>
+                </div>
+            </div>
+            <div class="status-item withdrawal">
+                <div class="status-label">
+                    🤢 戒断反应 <span class="value" id="withdrawalValue">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="fill" id="withdrawalBar" style="width:0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志 -->
+        <div class="log-area" id="logArea">
+            <div class="log-entry info">
+                <span class="time-tag">[系统]</span> 欢迎来到「瘾君子的一生」。你踏上了不归路...
+            </div>
+            <div class="log-entry warning">
+                <span class="time-tag">[警示]</span> 毒品会摧毁你的身体、精神和一切。
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="action-area" id="actionArea">
+            <button class="btn btn-primary" id="actionBtn1" onclick="handleAction1()">
+                🔪 抢劫
+            </button>
+            <button class="btn btn-danger" id="actionBtn2" onclick="handleAction2()" disabled>
+                💊 买毒
+            </button>
+            <button class="btn btn-dark" id="actionBtn3" onclick="handleAction3()" disabled>
+                🚫 戒毒
+            </button>
+        </div>
+
+        <div class="text-center mt-8" style="font-size:12px; color:#554a40; letter-spacing:1px; user-select:none;">
+            — 每一步都在走向毁灭 —
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  游戏状态
+        // ============================================================
+        const state = {
+            day: 1,
+            health: 100,
+            maxHealth: 100,
+            money: 150,
+            addiction: 15, // 0-100
+            withdrawal: 0, // 0-100
+            alive: true,
+            phase: 'day', // 'day' | 'night'
+            gameOver: false,
+            // 统计
+            totalRobberies: 0,
+            totalDrugs: 0,
+            totalDays: 0,
+        };
+
+        // ============================================================
+        //  DOM 引用
+        // ============================================================
+        const $ = id => document.getElementById(id);
+        const dayNumber = $('dayNumber');
+        const healthValue = $('healthValue');
+        const moneyValue = $('moneyValue');
+        const addictionValue = $('addictionValue');
+        const withdrawalValue = $('withdrawalValue');
+        const healthBar = $('healthBar');
+        const moneyBar = $('moneyBar');
+        const addictionBar = $('addictionBar');
+        const withdrawalBar = $('withdrawalBar');
+        const logArea = $('logArea');
+        const actionBtn1 = $('actionBtn1');
+        const actionBtn2 = $('actionBtn2');
+        const actionBtn3 = $('actionBtn3');
+        const phaseIndicator = $('phaseIndicator');
+        const deathScreen = $('deathScreen');
+        const effectOverlay = $('effectOverlay');
+        const redOverlay = $('redOverlay');
+        const app = $('app');
+
+        // ============================================================
+        //  工具 & 随机
+        // ============================================================
+        function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function randf(min, max) { return Math.random() * (max - min) + min; }
+
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+        function pick(arr) { return arr[rand(0, arr.length - 1)]; }
+
+        // ============================================================
+        //  日志系统
+        // ============================================================
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const time = `[Day ${state.day}]`;
+            entry.innerHTML = `<span class="time-tag">${time}</span> ${message}`;
+            logArea.appendChild(entry);
+            logArea.scrollTop = logArea.scrollHeight;
+            // 保持最多 50 条
+            while (logArea.children.length > 50) {
+                logArea.removeChild(logArea.firstChild);
+            }
+        }
+
+        function clearLogs() {
+            logArea.innerHTML = '';
+        }
+
+        // ============================================================
+        //  UI 更新
+        // ============================================================
+        function updateUI() {
+            const h = clamp(state.health, 0, state.maxHealth);
+            const hp = Math.round(h / state.maxHealth * 100);
+            const moneyPct = Math.min(state.money / 500 * 100, 100);
+            const addPct = clamp(state.addiction, 0, 100);
+            const wdPct = clamp(state.withdrawal, 0, 100);
+
+            dayNumber.textContent = state.day;
+            healthValue.textContent = `${hp}%`;
+            moneyValue.textContent = `¥${Math.floor(state.money)}`;
+            addictionValue.textContent = `${Math.round(addPct)}%`;
+            withdrawalValue.textContent = `${Math.round(wdPct)}%`;
+
+            healthBar.style.width = `${hp}%`;
+            moneyBar.style.width = `${Math.max(moneyPct, 2)}%`;
+            addictionBar.style.width = `${addPct}%`;
+            withdrawalBar.style.width = `${wdPct}%`;
+
+            // 颜色变化
+            const healthFill = healthBar;
+            if (hp < 25) {
+                healthFill.style.background = 'linear-gradient(90deg, #aa1111, #ff3333)';
+            } else if (hp < 50) {
+                healthFill.style.background = 'linear-gradient(90deg, #cc6622, #ff8844)';
+            } else {
+                healthFill.style.background = 'linear-gradient(90deg, #cc2222, #ff6644)';
+            }
+
+            // 毒瘾高亮
+            if (addPct > 70) {
+                addictionValue.className = 'value addiction-high';
+            } else {
+                addictionValue.className = 'value';
+            }
+
+            if (hp < 30) {
+                healthValue.className = 'value health-low';
+            } else {
+                healthValue.className = 'value';
+            }
+
+            // 按钮状态
+            updateButtons();
+
+            // 视觉特效
+            updateEffects(hp, addPct, wdPct);
+        }
+
+        function updateButtons() {
+            if (state.gameOver || !state.alive) {
+                actionBtn1.disabled = true;
+                actionBtn2.disabled = true;
+                actionBtn3.disabled = true;
+                return;
+            }
+
+            if (state.phase === 'day') {
+                actionBtn1.disabled = false;
+                actionBtn2.disabled = true;
+                actionBtn3.disabled = true;
+                actionBtn1.textContent = '🔪 抢劫';
+                actionBtn1.className = 'btn btn-primary';
+                phaseIndicator.innerHTML = '🌅 白天 · 出去寻找目标';
+            } else { // night
+                actionBtn1.disabled = true;
+                actionBtn2.disabled = false;
+                actionBtn3.disabled = false;
+                actionBtn2.textContent = '💊 买毒';
+                actionBtn2.className = 'btn btn-danger';
+                actionBtn3.textContent = '🚫 戒毒';
+                actionBtn3.className = 'btn btn-dark';
+                phaseIndicator.innerHTML = '🌙 夜晚 · 黑市交易';
+            }
+        }
+
+        // ============================================================
+        //  视觉特效
+        // ============================================================
+        let effectTimeout = null;
+
+        function updateEffects(hp, addPct, wdPct) {
+            // 红色覆盖
+            redOverlay.className = 'red-overlay';
+            if (hp < 20) {
+                redOverlay.className = 'red-overlay critical';
+            } else if (hp < 40) {
+                redOverlay.className = 'red-overlay heavy';
+            } else if (hp < 60 && wdPct > 50) {
+                redOverlay.className = 'red-overlay active';
+            }
+
+            // 模糊
+            app.className = 'blur-effect';
+            if (wdPct > 70 || hp < 25) {
+                app.className = 'blur-effect heavy';
+            } else if (wdPct > 45 || hp < 45) {
+                app.className = 'blur-effect medium';
+            } else if (wdPct > 25) {
+                app.className = 'blur-effect mild';
+            }
+
+            // 抖动 - 通过添加类触发
+            const overlay = effectOverlay;
+            overlay.className = 'effect-overlay';
+            if (wdPct > 60) {
+                overlay.className = 'effect-overlay shake-heavy';
+            } else if (wdPct > 30) {
+                overlay.className = 'effect-overlay shake-mild';
+            }
+
+            // 如果健康极低，持续抖动
+            if (hp < 20) {
+                overlay.className = 'effect-overlay shake-heavy';
+            }
+        }
+
+        // ============================================================
+        //  游戏核心逻辑
+        // ============================================================
+
+        // ---- 白天：抢劫 ----
+        function doRobbery() {
+            if (state.phase !== 'day' || state.gameOver) return;
+
+            state.totalRobberies++;
+
+            // 成功率随天数下降（身体变差），随毒瘾上升而下降
+            let baseRate = 80 - state.day * 0.8 - state.addiction * 0.15;
+            baseRate = clamp(baseRate, 20, 90);
+            const success = Math.random() * 100 < baseRate;
+
+            let logMsg = '';
+            let logType = 'info';
+
+            if (success) {
+                const gain = rand(40, 130) + Math.floor(state.day * 0.5);
+                state.money += gain;
+                const healthCost = rand(1, 4) + Math.floor(state.addiction / 30);
+                state.health = clamp(state.health - healthCost, 0, state.maxHealth);
+                logMsg = `💰 抢劫成功！抢到了 ¥${gain}，但身体受了些伤 (-${healthCost} 健康)`;
+                logType = 'success';
+                // 随机额外事件
+                if (Math.random() < 0.15) {
+                    const extra = rand(20, 60);
+                    state.money += extra;
+                    logMsg += ` 意外发现额外 ¥${extra}！`;
+                }
+            } else {
+                const damage = rand(8, 22) + Math.floor(state.day / 3);
+                state.health = clamp(state.health - damage, 0, state.maxHealth);
+                logMsg = `💥 抢劫失败！被对方反击，受了重伤 (-${damage} 健康)`;
+                logType = 'danger';
+                // 可能失去一些钱
+                if (Math.random() < 0.3) {
+                    const lost = rand(10, 40);
+                    state.money = Math.max(0, state.money - lost);
+                    logMsg += ` 混乱中丢失了 ¥${lost}`;
+                }
+            }
+
+            // 每次抢劫都会加重毒瘾（心理依赖）
+            const addIncrease = rand(1, 4) + Math.floor(state.day / 15);
+            state.addiction = clamp(state.addiction + addIncrease, 0, 100);
+
+            addLog(logMsg, logType);
+
+            // 检查死亡
+            if (state.health <= 0) {
+                state.health = 0;
+                die('你在抢劫中受了致命伤，倒在血泊中...');
+                return;
+            }
+
+            // 进入夜晚
+            state.phase = 'night';
+            updateUI();
+            addLog('🌙 夜幕降临，你来到了黑市...', 'info');
+        }
+
+        // ---- 晚上：买毒 ----
+        function buyDrug() {
+            if (state.phase !== 'night' || state.gameOver) return;
+
+            const cost = 30 + Math.floor(state.addiction * 1.8) + rand(0, 20);
+            if (state.money < cost) {
+                addLog(`❌ 钱不够！买毒需要 ¥${cost}，你只有 ¥${Math.floor(state.money)}`, 'danger');
+                // 没钱买毒，强制进入戒断
+                state.phase = 'day';
+                state.day++;
+                addLog(`⏰ 第 ${state.day} 天开始了... 没有毒品，你开始感到不适。`, 'warning');
+                processWithdrawal();
+                updateUI();
+                return;
+            }
+
+            state.money -= cost;
+            state.totalDrugs++;
+
+            // 毒瘾上升
+            const addGain = rand(4, 10) + Math.floor(state.day / 8);
+            state.addiction = clamp(state.addiction + addGain, 0, 100);
+
+            // 健康下降（毒品对身体造成伤害）
+            const healthCost = rand(1, 3) + Math.floor(state.addiction / 35);
+            state.health = clamp(state.health - healthCost, 0, state.maxHealth);
+
+            // 戒断反应缓解
+            state.withdrawal = clamp(state.withdrawal - rand(12, 25), 0, 100);
+
+            const logMsg = `💉 在黑市购买了毒品，花费 ¥${cost}。毒瘾加深 (+${addGain})，身体受损 (-${healthCost} 健康)`;
+            addLog(logMsg, 'warning');
+
+            // 随机事件：买到劣质毒品
+            if (Math.random() < 0.12) {
+                const extraDamage = rand(5, 15);
+                state.health = clamp(state.health - extraDamage, 0, state.maxHealth);
+                addLog(`⚠️ 劣质毒品！身体出现严重反应 (-${extraDamage} 健康)`, 'danger');
+            }
+
+            // 检查死亡
+            if (state.health <= 0) {
+                state.health = 0;
+                die('毒品摧毁了你的身体，你倒在了黑市角落...');
+                return;
+            }
+
+            if (state.addiction >= 100) {
+                die('毒瘾达到极限，你因吸毒过量而死亡...');
+                return;
+            }
+
+            // 进入下一天
+            state.phase = 'day';
+            state.day++;
+            addLog(`⏰ 第 ${state.day} 天开始了... 你继续在深渊中挣扎。`, 'info');
+            processWithdrawal();
+            updateUI();
+        }
+
+        // ---- 晚上：戒毒 ----
+        function doDetox() {
+            if (state.phase !== 'night' || state.gameOver) return;
+
+            // 戒毒：尝试减少毒瘾，但会引发严重戒断反应
+            const reduction = rand(2, 6) + Math.floor(state.day / 20);
+            state.addiction = clamp(state.addiction - reduction, 0, 100);
+
+            // 戒断反应急剧上升
+            const wdGain = rand(15, 35) + Math.floor(state.addiction / 3);
+            state.withdrawal = clamp(state.withdrawal + wdGain, 0, 100);
+
+            // 健康下降
+            const healthCost = rand(3, 8) + Math.floor(state.withdrawal / 15);
+            state.health = clamp(state.health - healthCost, 0, state.maxHealth);
+
+            addLog(`🚫 尝试戒毒！毒瘾降低 (-${reduction})，但戒断反应剧烈爆发 (+${wdGain})，健康受损 (-${healthCost})`, 'danger');
+
+            if (state.health <= 0) {
+                state.health = 0;
+                die('戒断反应太强烈，你的身体无法承受...');
+                return;
+            }
+
+            // 进入下一天
+            state.phase = 'day';
+            state.day++;
+            addLog(`⏰ 第 ${state.day} 天开始了... 戒断反应让你痛苦不堪。`, 'info');
+            processWithdrawal();
+            updateUI();
+        }
+
+        // ---- 戒断反应处理（每天开始调用） ----
+        function processWithdrawal() {
+            if (state.gameOver) return;
+
+            const wd = state.withdrawal;
+            const add = state.addiction;
+
+            // 戒断反应自然衰减（如果不买毒，会持续恶化）
+            if (wd > 0) {
+                // 如果毒瘾高，戒断反应更难消退
+                const decay = 2 + Math.floor(add / 20);
+                state.withdrawal = clamp(wd - decay, 0, 100);
+            }
+
+            // 如果毒瘾高且戒断反应也高，健康急剧下降
+            if (add > 40 && wd > 30) {
+                const damage = Math.floor((add + wd) / 20) + rand(1, 3);
+                state.health = clamp(state.health - damage, 0, state.maxHealth);
+                addLog(`🔥 毒瘾与戒断反应双重折磨，健康 -${damage}`, 'danger');
+            } else if (wd > 50) {
+                const damage = Math.floor(wd / 15) + rand(1, 3);
+                state.health = clamp(state.health - damage, 0, state.maxHealth);
+                addLog(`🤢 戒断反应加剧，身体颤抖不止，健康 -${damage}`, 'danger');
+            } else if (wd > 25) {
+                const damage = rand(1, 3);
+                state.health = clamp(state.health - damage, 0, state.maxHealth);
+                addLog(`😰 持续的戒断反应让你备受煎熬，健康 -${damage}`, 'warning');
+            }
+
+            // 毒瘾自然上升（成瘾性）
+            if (add < 95) {
+                state.addiction = clamp(add + rand(0, 2) + state.day * 0.05, 0, 100);
+            }
+
+            // 如果健康归零
+            if (state.health <= 0) {
+                state.health = 0;
+                die('戒断反应彻底击垮了你...');
+                return;
+            }
+
+            // 如果毒瘾达到100
+            if (state.addiction >= 100) {
+                die('你的毒瘾已达到极限，身体彻底崩溃...');
+                return;
+            }
+
+            // 每天自然恢复一点点（但很少）
+            state.health = clamp(state.health + rand(0, 1), 0, state.maxHealth);
+
+            // 叙事性消息
+            const dayMessages = [
+                '你继续在这条不归路上前行...',
+                '每一天都是挣扎，每一刻都是煎熬。',
+                '毒品已经掌控了你的全部。',
+                '你的身体在发出最后的警告。',
+                '你开始忘记正常的生活是什么样子。',
+                '周围的人都在远离你，你只剩自己。',
+                '你甚至记不清上一次清醒是什么时候。',
+                '深渊在凝视着你，而你也在凝视深渊。',
+            ];
+            if (state.day % 3 === 0 && state.day > 1) {
+                addLog(`📖 ${pick(dayMessages)}`, 'info');
+            }
+
+            // 特殊阶段叙事
+            if (state.day === 3) {
+                addLog('📖 第三天... 你已经开始离不开它了。', 'warning');
+            }
+            if (state.day === 7) {
+                addLog('📖 一周了。你的身体在崩溃，你的灵魂在消散。', 'danger');
+            }
+            if (state.day === 14) {
+                addLog('📖 两周... 你几乎认不出镜子里的自己。', 'danger');
+            }
+            if (state.day === 21) {
+                addLog('📖 三周。你还在坚持，但已经只剩一副空壳。', 'danger');
+            }
+
+            updateUI();
+        }
+
+        // ============================================================
+        //  死亡
+        // ============================================================
+        function die(message) {
+            if (state.gameOver) return;
+            state.gameOver = true;
+            state.alive = false;
+            state.health = 0;
+
+            addLog(`💀 ${message}`, 'death');
+            addLog('☠️ 你的人生就此终结... 毒品夺走了一切。', 'death');
+
+            updateUI();
+
+            // 显示死亡画面
+            setTimeout(() => {
+                $('deathDays').textContent = state.day;
+                $('deathHealth').textContent = Math.round(state.health / state.maxHealth * 100);
+                $('deathAddiction').textContent = Math.round(clamp(state.addiction, 0, 100));
+
+                const msgs = [
+                    '「毒品不会让你解脱，只会让你更快地走向深渊。」',
+                    '「你以为是你在控制毒品，其实是毒品在控制你。」',
+                    '「每一个吸毒者都曾是鲜活的生命，直到毒品吞噬了一切。」',
+                    '「你的死亡，是毒品的胜利，是家庭的破碎。」',
+                    '「如果可以重来，你会选择第一次吗？可惜没有如果。」',
+                    '「毒品让你短暂地逃离现实，却永远地失去了未来。」',
+                ];
+                $('deathMessage').innerHTML = `<strong>${pick(msgs)}</strong>`;
+
+                deathScreen.classList.add('show');
+                // 禁用按钮
+                actionBtn1.disabled = true;
+                actionBtn2.disabled = true;
+                actionBtn3.disabled = true;
+            }, 800);
+        }
+
+        // ============================================================
+        //  按钮处理
+        // ============================================================
+        function handleAction1() {
+            if (state.gameOver || !state.alive) return;
+            if (state.phase === 'day') {
+                doRobbery();
+            }
+        }
+
+        function handleAction2() {
+            if (state.gameOver || !state.alive) return;
+            if (state.phase === 'night') {
+                buyDrug();
+            }
+        }
+
+        function handleAction3() {
+            if (state.gameOver || !state.alive) return;
+            if (state.phase === 'night') {
+                doDetox();
+            }
+        }
+
+        // ============================================================
+        //  重新开始
+        // ============================================================
+        function restartGame() {
+            // 重置状态
+            state.day = 1;
+            state.health = 100;
+            state.maxHealth = 100;
+            state.money = 150;
+            state.addiction = 15;
+            state.withdrawal = 0;
+            state.alive = true;
+            state.gameOver = false;
+            state.phase = 'day';
+            state.totalRobberies = 0;
+            state.totalDrugs = 0;
+            state.totalDays = 0;
+
+            deathScreen.classList.remove('show');
+
+            // 清空日志
+            clearLogs();
+            addLog('🔄 重新开始... 你又一次踏上了这条不归路。', 'info');
+            addLog('⚠️ 记住：每一次选择都在决定你的命运。', 'warning');
+
+            // 重置特效
+            redOverlay.className = 'red-overlay';
+            app.className = 'blur-effect';
+            effectOverlay.className = 'effect-overlay';
+
+            updateUI();
+            addLog('🌅 第一天：你站在十字路口，前方是深渊。', 'info');
+        }
+
+        // ============================================================
+        //  键盘快捷键
+        // ============================================================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '1') handleAction1();
+            if (e.key === '2') handleAction2();
+            if (e.key === '3') handleAction3();
+            if (e.key === 'r' || e.key === 'R') {
+                if (state.gameOver) restartGame();
+            }
+        });
+
+        // ============================================================
+        //  初始化
+        // ============================================================
+        updateUI();
+        addLog('🌅 第一天：你决定去抢劫，换取买毒的钱。', 'info');
+        addLog('💡 提示：白天抢劫 (1)，晚上买毒 (2) 或戒毒 (3)', 'info');
+
+        console.log('☠️ 瘾君子的一生 - 戒毒宣传游戏');
+        console.log('按 1: 抢劫 | 2: 买毒 | 3: 戒毒 | R: 重新开始');
+    </script>
+
+</body>
+</html>
