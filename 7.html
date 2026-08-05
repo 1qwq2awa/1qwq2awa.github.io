@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>📋 批准 · 盖章音游</title>
+    <style>
+        /* ========== 全局重置 & 字体 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: #1a1410;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, system-ui, sans-serif;
+            touch-action: none;
+            overflow: hidden;
+        }
+        .game-wrapper {
+            background: linear-gradient(145deg, #2d231e, #1e1612);
+            border-radius: 40px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 215, 150, 0.08);
+            position: relative;
+        }
+        .game-container {
+            position: relative;
+            width: 420px;
+            height: 700px;
+            border-radius: 28px;
+            overflow: hidden;
+            background: #1a1410;
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
+            touch-action: none;
+        }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            cursor: pointer;
+        }
+        /* ========== HUD 覆盖层 (DOM) ========== */
+        .hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .score-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 22px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        .score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: rgba(255, 220, 180, 0.6);
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .score-item .value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #f5e3d0;
+            text-shadow: 0 0 20px rgba(255, 200, 150, 0.15);
+            margin-top: 2px;
+            font-feature-settings: "tnum";
+        }
+        .score-item .value.combo {
+            color: #ffd866;
+            text-shadow: 0 0 30px rgba(255, 216, 102, 0.3);
+        }
+        .score-item .value.perfect {
+            color: #6fcf97;
+        }
+        .score-item .value.miss {
+            color: #eb5757;
+        }
+        .judge-text {
+            position: absolute;
+            top: 42%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8), 0 0 60px rgba(255, 200, 100, 0.2);
+            opacity: 0;
+            transition: opacity 0.08s ease;
+            pointer-events: none;
+            letter-spacing: 2px;
+        }
+        .judge-text.show {
+            opacity: 1;
+            animation: judgePop 0.5s ease-out forwards;
+        }
+        @keyframes judgePop {
+            0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -60%) scale(1); opacity: 0; }
+        }
+        .judge-text.perfect { color: #6fcf97; }
+        .judge-text.good { color: #f2c94a; }
+        .judge-text.miss { color: #eb5757; }
+        .combo-display {
+            position: absolute;
+            bottom: 110px;
+            right: 24px;
+            font-size: 36px;
+            font-weight: 900;
+            color: rgba(255, 216, 102, 0.15);
+            pointer-events: none;
+            font-feature-settings: "tnum";
+            transition: all 0.15s ease;
+        }
+        .combo-display.active {
+            color: rgba(255, 216, 102, 0.7);
+            text-shadow: 0 0 40px rgba(255, 216, 102, 0.15);
+        }
+        .combo-display .label {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 220, 180, 0.3);
+            display: block;
+            text-align: right;
+            letter-spacing: 1px;
+        }
+        .stamp-hint {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 52px;
+            border-radius: 60px;
+            background: rgba(200, 80, 60, 0.15);
+            border: 1px solid rgba(200, 80, 60, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 200, 150, 0.4);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s ease;
+        }
+        .stamp-hint.active {
+            background: rgba(200, 80, 60, 0.3);
+            border-color: rgba(200, 80, 60, 0.5);
+            color: rgba(255, 200, 150, 0.7);
+            box-shadow: 0 0 40px rgba(200, 80, 60, 0.15);
+        }
+        .stamp-hint .icon {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        /* ========== 开始 / 结束 覆盖层 ========== */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 10;
+            transition: opacity 0.5s ease;
+            border-radius: 28px;
+            padding: 30px;
+            text-align: center;
+        }
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .overlay .title {
+            font-size: 52px;
+            font-weight: 900;
+            color: #f5e3d0;
+            margin-bottom: 8px;
+            letter-spacing: 4px;
+            text-shadow: 0 4px 40px rgba(255, 200, 150, 0.15);
+        }
+        .overlay .subtitle {
+            font-size: 18px;
+            color: rgba(255, 220, 180, 0.5);
+            margin-bottom: 30px;
+            font-weight: 400;
+            letter-spacing: 2px;
+        }
+        .overlay .subtitle .emoji {
+            font-size: 24px;
+        }
+        .overlay .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0 30px;
+            width: 100%;
+            max-width: 280px;
+        }
+        .overlay .stat-item {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 12px 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .overlay .stat-item .num {
+            font-size: 28px;
+            font-weight: 800;
+            color: #f5e3d0;
+        }
+        .overlay .stat-item .label {
+            font-size: 11px;
+            color: rgba(255, 220, 180, 0.3);
+            margin-top: 2px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        .overlay .stat-item .num.perfect { color: #6fcf97; }
+        .overlay .stat-item .num.good { color: #f2c94a; }
+        .overlay .stat-item .num.miss { color: #eb5757; }
+        .overlay .stat-item .num.combo { color: #ffd866; }
+        .btn {
+            pointer-events: auto;
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            padding: 16px 48px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 30px rgba(192, 57, 43, 0.4);
+            letter-spacing: 2px;
+            font-family: inherit;
+            touch-action: manipulation;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(192, 57, 43, 0.5);
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .btn .stamp-icon {
+            display: inline-block;
+            margin-right: 10px;
+            font-size: 24px;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: none;
+            padding: 12px 32px;
+            font-size: 16px;
+            margin-top: 12px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: none;
+        }
+        .final-score {
+            font-size: 64px;
+            font-weight: 900;
+            color: #f5e3d0;
+            margin: 4px 0 0;
+            letter-spacing: 2px;
+        }
+        .final-label {
+            font-size: 14px;
+            color: rgba(255, 220, 180, 0.3);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .grade {
+            font-size: 72px;
+            margin: 6px 0 10px;
+        }
+        /* ========== 响应式 ========== */
+        @media (max-width: 460px) {
+            .game-container {
+                width: 100vw;
+                height: 100vw;
+                max-height: 90vh;
+                border-radius: 0;
+            }
+            .game-wrapper {
+                padding: 0;
+                border-radius: 0;
+                background: none;
+                box-shadow: none;
+            }
+            .overlay { border-radius: 0; }
+            .score-bar { padding: 12px 16px; }
+            .score-item .value { font-size: 18px; }
+            .overlay .title { font-size: 36px; }
+            .btn { padding: 14px 32px; font-size: 17px; }
+            .stamp-hint {
+                width: 110px;
+                height: 44px;
+                font-size: 12px;
+                bottom: 20px;
+            }
+            .combo-display {
+                bottom: 80px;
+                right: 16px;
+                font-size: 28px;
+            }
+        }
+        @media (max-width: 380px) {
+            .score-item .value { font-size: 15px; }
+            .score-item { font-size: 9px; }
+            .overlay .title { font-size: 28px; }
+            .overlay .stats-grid { gap: 10px; }
+            .overlay .stat-item .num { font-size: 22px; }
+        }
+        .toolbar {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            z-index: 5;
+            display: flex;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toolbar .btn-icon {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: rgba(255, 220, 180, 0.5);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            touch-action: manipulation;
+        }
+        .toolbar .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 220, 180, 0.8);
+            transform: scale(1.05);
+        }
+        .toolbar .btn-icon:active {
+            transform: scale(0.92);
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-wrapper">
+    <div class="game-container" id="gameContainer">
+        <canvas id="gameCanvas" width="420" height="700"></canvas>
+
+        <div class="hud" id="hud">
+            <div class="score-bar">
+                <div class="score-item">
+                    <span>得分</span>
+                    <span class="value" id="scoreDisplay">0</span>
+                </div>
+                <div class="score-item">
+                    <span>连击</span>
+                    <span class="value combo" id="comboDisplay">0</span>
+                </div>
+                <div class="score-item">
+                    <span>准确</span>
+                    <span class="value" id="accuracyDisplay">0%</span>
+                </div>
+            </div>
+            <div class="judge-text" id="judgeText"></div>
+            <div class="combo-display" id="comboBig">
+                <span id="comboBigNum">0</span>
+                <span class="label">COMBO</span>
+            </div>
+            <div class="stamp-hint" id="stampHint">
+                <span class="icon">🖊️</span> 盖章
+            </div>
+        </div>
+
+        <!-- 开始界面 -->
+        <div class="overlay" id="startOverlay">
+            <div class="title">📋 批准</div>
+            <div class="subtitle">
+                <span class="emoji">🖊️</span> 跟随节奏 · 盖章通过
+            </div>
+            <button class="btn" id="startBtn">
+                <span class="stamp-icon">✅</span> 开始审批
+            </button>
+            <div style="margin-top: 20px; color: rgba(255,220,180,0.2); font-size: 13px; letter-spacing: 1px;">
+                点击「盖章」或按 <kbd>空格</kbd>
+            </div>
+        </div>
+
+        <!-- 结束界面 -->
+        <div class="overlay hidden" id="endOverlay">
+            <div class="grade" id="gradeEmoji">🏆</div>
+            <div class="final-label">最终得分</div>
+            <div class="final-score" id="finalScore">0</div>
+            <div class="stats-grid" id="finalStats">
+                <div class="stat-item">
+                    <div class="num perfect" id="finalPerfect">0</div>
+                    <div class="label">Perfect</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num good" id="finalGood">0</div>
+                    <div class="label">Good</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num miss" id="finalMiss">0</div>
+                    <div class="label">Miss</div>
+                </div>
+            </div>
+            <button class="btn" id="restartBtn">
+                <span class="stamp-icon">🔄</span> 再来一次
+            </button>
+            <button class="btn btn-secondary" id="homeBtn">
+                🏠 返回首页
+            </button>
+        </div>
+
+        <div class="toolbar">
+            <button class="btn-icon" id="toggleSoundBtn" title="音效开关">🔊</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    //  🎵  批准 · 盖章音游  –  速度优化（更慢）
+    // ============================================================
+
+    // ---------- DOM 引用 ----------
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('gameContainer');
+
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const comboDisplay = document.getElementById('comboDisplay');
+    const accuracyDisplay = document.getElementById('accuracyDisplay');
+    const judgeText = document.getElementById('judgeText');
+    const comboBigNum = document.getElementById('comboBigNum');
+    const comboBig = document.getElementById('comboBig');
+    const stampHint = document.getElementById('stampHint');
+
+    const startOverlay = document.getElementById('startOverlay');
+    const endOverlay = document.getElementById('endOverlay');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const homeBtn = document.getElementById('homeBtn');
+    const toggleSoundBtn = document.getElementById('toggleSoundBtn');
+
+    const finalScore = document.getElementById('finalScore');
+    const finalPerfect = document.getElementById('finalPerfect');
+    const finalGood = document.getElementById('finalGood');
+    const finalMiss = document.getElementById('finalMiss');
+    const gradeEmoji = document.getElementById('gradeEmoji');
+
+    // ---------- 尺寸适配 ----------
+    function resizeCanvas() {
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        ctx.scale(dpr, dpr);
+        canvas.logicalWidth = rect.width;
+        canvas.logicalHeight = rect.height;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // ---------- 游戏配置 (降低速度) ----------
+    const CONFIG = {
+        BPM: 100,                // 从 120 降低到 100，节奏更慢
+        NOTES_COUNT: 40,          // 减少音符数量，避免过于密集
+        JUDGE_PERFECT: 70,        // 稍微放宽判定，更容易
+        JUDGE_GOOD: 140,
+        NOTE_SPEED: 280,          // 从 380 降低到 280，下落更慢
+        LANE_COUNT: 1,
+        NOTE_RADIUS: 28,
+        JUDGE_LINE_Y_RATIO: 0.78,
+    };
+
+    // ---------- 音频引擎 ----------
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playTone(freq, duration, type = 'sine', volume = 0.25) {
+        if (!soundEnabled || !audioCtx) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        } catch (_) {}
+    }
+
+    function playStampSound() {
+        playTone(180, 0.08, 'square', 0.20);
+        setTimeout(() => playTone(320, 0.04, 'sine', 0.10), 30);
+    }
+
+    function playPerfectSound() {
+        playTone(880, 0.12, 'sine', 0.18);
+        setTimeout(() => playTone(1100, 0.10, 'sine', 0.12), 80);
+    }
+
+    function playGoodSound() {
+        playTone(660, 0.10, 'sine', 0.16);
+    }
+
+    function playMissSound() {
+        playTone(200, 0.20, 'sawtooth', 0.10);
+    }
+
+    // ---------- 游戏状态 ----------
+    const state = {
+        notes: [],
+        score: 0,
+        combo: 0,
+        maxCombo: 0,
+        totalNotes: 0,
+        perfectCount: 0,
+        goodCount: 0,
+        missCount: 0,
+        isPlaying: false,
+        isFinished: false,
+        startTime: 0,
+        elapsed: 0,
+        lastTimestamp: 0,
+        judgeEffect: null,
+        stampEffects: [],
+        beatPulse: 0,
+        noteIndex: 0,
+        noteTimes: [],
+        initialized: false,
+        animFrame: null,
+        currentTime: 0,
+        lastRenderTime: 0,
+    };
+
+    // ---------- 节奏生成 ----------
+    function generateRhythm(bpm, numNotes) {
+        const beatDuration = 60 / bpm;
+        const times = [];
+        const patterns = [
+            [1, 0, 1, 0, 1, 0, 1, 0],
+            [0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 1, 0, 1, 1, 0, 1, 0],
+            [1, 0, 0, 1, 0, 0, 1, 0],
+            [0, 0, 1, 0, 0, 0, 1, 0],
+            [1, 0, 1, 0, 0, 1, 0, 1],
+        ];
+        let totalBeats = 0;
+        const maxBeats = numNotes * 2.5;
+        let patternIdx = 0, beatIdx = 0;
+        while (times.length < numNotes && totalBeats < maxBeats) {
+            const pattern = patterns[patternIdx % patterns.length];
+            const beat = pattern[beatIdx % 8];
+            if (beat === 1) {
+                const time = totalBeats * (beatDuration / 2);
+                const swing = (beatIdx % 2 === 1) ? 0.03 : 0;
+                times.push(time + swing);
+            }
+            beatIdx++;
+            if (beatIdx % 8 === 0) patternIdx++;
+            totalBeats += 0.5;
+        }
+        while (times.length < numNotes) {
+            const last = times.length > 0 ? times[times.length - 1] : 0;
+            times.push(last + beatDuration * 0.8);
+        }
+        return times.slice(0, numNotes);
+    }
+
+    // ---------- 初始化游戏 ----------
+    function initGame() {
+        const times = generateRhythm(CONFIG.BPM, CONFIG.NOTES_COUNT);
+        state.noteTimes = times;
+        state.notes = [];
+        state.score = 0;
+        state.combo = 0;
+        state.maxCombo = 0;
+        state.totalNotes = times.length;
+        state.perfectCount = 0;
+        state.goodCount = 0;
+        state.missCount = 0;
+        state.noteIndex = 0;
+        state.isPlaying = false;
+        state.isFinished = false;
+        state.elapsed = 0;
+        state.startTime = 0;
+        state.currentTime = 0;
+        state.judgeEffect = null;
+        state.stampEffects = [];
+        state.beatPulse = 0;
+        state.initialized = true;
+
+        const colors = ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#9b59b6', '#1abc9c'];
+        for (let i = 0; i < times.length; i++) {
+            const t = times[i];
+            state.notes.push({
+                id: i,
+                time: t,
+                x: 0,
+                y: 0,
+                radius: CONFIG.NOTE_RADIUS,
+                color: colors[i % colors.length],
+                judged: false,
+                judgedType: null,
+                hitTime: 0,
+                emoji: ['📄', '📋', '📑', '📊', '📝', '📈'][i % 6],
+            });
+        }
+        updateHUD();
+        render();
+    }
+
+    // ---------- 游戏循环 ----------
+    function gameLoop(timestamp) {
+        if (!state.isPlaying && !state.isFinished) {
+            state.animFrame = requestAnimationFrame(gameLoop);
+            return;
+        }
+        const now = performance.now();
+        if (state.startTime === 0) {
+            state.startTime = now;
+            state.lastRenderTime = now;
+        }
+        state.elapsed = (now - state.startTime) / 1000;
+        state.currentTime = state.elapsed;
+
+        // 生成音符
+        const pregenTime = 2.5; // 提前生成更多
+        while (state.noteIndex < state.notes.length) {
+            const note = state.notes[state.noteIndex];
+            if (note.time <= state.elapsed + pregenTime) {
+                const noteY = getNoteY(note.time, state.elapsed);
+                note.y = noteY;
+                const logicalW = canvas.logicalWidth || 420;
+                note.x = logicalW / 2;
+                state.noteIndex++;
+            } else {
+                break;
+            }
+        }
+
+        // 判定超时 Miss
+        const judgeLineY = getJudgeLineY();
+        for (const note of state.notes) {
+            if (note.judged) continue;
+            const diff = (note.time - state.elapsed) * 1000;
+            if (diff < -CONFIG.JUDGE_GOOD - 50) {
+                note.judged = true;
+                note.judgedType = 'miss';
+                state.missCount++;
+                state.combo = 0;
+                updateCombo();
+                showJudge('Miss', 'miss');
+                playMissSound();
+                updateHUD();
+            }
+        }
+
+        // 更新印章特效 (快速消失)
+        for (const eff of state.stampEffects) {
+            eff.progress += 0.07;
+        }
+        state.stampEffects = state.stampEffects.filter(e => e.progress < 1);
+
+        // 节拍脉冲
+        const beatDur = 60 / CONFIG.BPM;
+        const beatPhase = (state.elapsed % beatDur) / beatDur;
+        state.beatPulse = Math.sin(beatPhase * Math.PI * 2) * 0.5 + 0.5;
+
+        render();
+
+        const allJudged = state.notes.every(n => n.judged);
+        if (allJudged && state.notes.length > 0 && state.isPlaying) {
+            state.isPlaying = false;
+            state.isFinished = true;
+            setTimeout(showEndScreen, 400);
+        }
+
+        state.lastRenderTime = now;
+        state.animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    // ---------- 渲染 ----------
+    function render() {
+        const W = canvas.logicalWidth || 420;
+        const H = canvas.logicalHeight || 700;
+
+        ctx.clearRect(0, 0, W, H);
+
+        // 背景
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+        bgGrad.addColorStop(0, '#1a1410');
+        bgGrad.addColorStop(0.7, '#231b16');
+        bgGrad.addColorStop(1, '#1a1410');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, W, H);
+
+        // 网格线
+        ctx.strokeStyle = 'rgba(255,220,180,0.03)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < H; i += 40) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(W, i);
+            ctx.stroke();
+        }
+
+        // 判定线
+        const judgeY = getJudgeLineY();
+        const glowGrad = ctx.createRadialGradient(W / 2, judgeY, 10, W / 2, judgeY, 120);
+        glowGrad.addColorStop(0, 'rgba(255,200,150,0.06)');
+        glowGrad.addColorStop(1, 'rgba(255,200,150,0)');
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(W / 2, judgeY, 120, 0, Math.PI * 2);
+        ctx.fill();
+
+        const lineColor = `rgba(255,200,150,${0.15 + state.beatPulse * 0.08})`;
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(255,200,150,0.05)';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.moveTo(20, judgeY);
+        ctx.lineTo(W - 20, judgeY);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        for (let x = 40; x < W - 40; x += 30) {
+            ctx.fillStyle = 'rgba(255,200,150,0.04)';
+            ctx.beginPath();
+            ctx.arc(x, judgeY, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 绘制音符
+        for (const note of state.notes) {
+            if (note.judged && note.judgedType === 'miss') continue;
+            const y = getNoteY(note.time, state.elapsed);
+            note.y = y;
+            if (y < -80 || y > H + 80) continue;
+
+            const x = note.x || W / 2;
+            const r = note.radius;
+
+            // 发光
+            const glow = ctx.createRadialGradient(x, y, r * 0.2, x, y, r * 1.8);
+            const color = note.color;
+            glow.addColorStop(0, color + '30');
+            glow.addColorStop(1, color + '00');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(x, y, r * 1.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 主体
+            const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+            grad.addColorStop(0, '#fff8f0');
+            grad.addColorStop(0.2, note.color);
+            grad.addColorStop(0.8, note.color);
+            grad.addColorStop(1, '#2d1f1a');
+            ctx.shadowColor = note.color + '40';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.font = `${r * 0.9}px "Segoe UI", "Apple Color Emoji", system-ui, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText(note.emoji, x, y + 1);
+
+            if (note.judged && (note.judgedType === 'perfect' || note.judgedType === 'good')) {
+                const stampSize = r * 0.7;
+                ctx.font = `${stampSize}px "Segoe UI", "Apple Color Emoji", system-ui, sans-serif`;
+                ctx.fillStyle = 'rgba(255,60,60,0.7)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('✅', x + r * 0.5, y - r * 0.3);
+            }
+
+            const distToLine = Math.abs(y - judgeY);
+            if (distToLine < 60 && !note.judged) {
+                const intensity = 1 - distToLine / 60;
+                ctx.shadowColor = note.color + `${Math.floor(intensity * 40).toString(16).padStart(2,'0')}`;
+                ctx.shadowBlur = 40 * intensity;
+                ctx.beginPath();
+                ctx.arc(x, y, r * (1 + intensity * 0.1), 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.02)';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // ---- 印章特效 (精简) ----
+        for (const eff of state.stampEffects) {
+            const p = eff.progress;
+            const alpha = 1 - p * 0.9;
+            const scale = 0.6 + p * 0.6;
+            const size = 36 * scale;
+
+            // 光晕
+            const glowR = size * 1.5 * (1 + p * 0.4);
+            const grad = ctx.createRadialGradient(eff.x, eff.y, 0, eff.x, eff.y, glowR);
+            grad.addColorStop(0, eff.color + '30');
+            grad.addColorStop(1, eff.color + '00');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(eff.x, eff.y, glowR, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.save();
+            ctx.translate(eff.x, eff.y);
+            ctx.scale(scale, scale);
+            ctx.shadowColor = eff.color + '60';
+            ctx.shadowBlur = 20;
+
+            ctx.fillStyle = eff.color + Math.floor(alpha * 180).toString(16).padStart(2, '0');
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = `rgba(255,255,255,${alpha * 0.08})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.font = `bold ${size * 0.28}px "PingFang SC", "Segoe UI", system-ui, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = `rgba(255,255,255,${alpha * 0.85})`;
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 8;
+            ctx.fillText(eff.text || '批准', 0, 2);
+
+            ctx.restore();
+
+            for (let i = 0; i < 4; i++) {
+                const angle = (i / 4) * Math.PI * 2 + p * 2.5;
+                const dist = size * (0.5 + p * 1.0);
+                const px = eff.x + Math.cos(angle) * dist;
+                const py = eff.y + Math.sin(angle) * dist;
+                const ps = 2 * (1 - p) * (0.5 + Math.random() * 0.5);
+                ctx.fillStyle = eff.color + Math.floor(alpha * 120).toString(16).padStart(2, '0');
+                ctx.beginPath();
+                ctx.arc(px, py, ps, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // 底部提示
+        const hintActive = state.isPlaying && state.notes.some(n => !n.judged && n.y > 0.3 * H && n.y < judgeY + 50);
+        if (hintActive) {
+            stampHint.classList.add('active');
+        } else {
+            stampHint.classList.remove('active');
+        }
+
+        // 节拍光晕
+        if (state.isPlaying) {
+            const pulse = state.beatPulse;
+            const grad2 = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, W * 0.7);
+            grad2.addColorStop(0, `rgba(255,200,150,${pulse * 0.02})`);
+            grad2.addColorStop(1, 'rgba(255,200,150,0)');
+            ctx.fillStyle = grad2;
+            ctx.fillRect(0, 0, W, H);
+        }
+    }
+
+    // ---------- 辅助函数 ----------
+    function getJudgeLineY() {
+        const H = canvas.logicalHeight || 700;
+        return H * CONFIG.JUDGE_LINE_Y_RATIO;
+    }
+
+    function getNoteY(noteTime, currentTime) {
+        const judgeY = getJudgeLineY();
+        const timeDiff = noteTime - currentTime;
+        return judgeY - timeDiff * CONFIG.NOTE_SPEED;
+    }
+
+    // ---------- 玩家盖章 ----------
+    function handleStamp(clientX, clientY) {
+        if (!state.isPlaying || state.isFinished) return;
+        initAudio();
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = (canvas.logicalWidth || 420) / rect.width;
+        const scaleY = (canvas.logicalHeight || 700) / rect.height;
+        const x = (clientX - rect.left) * scaleX;
+        const y = (clientY - rect.top) * scaleY;
+
+        let bestNote = null;
+        let bestDiff = Infinity;
+
+        for (const note of state.notes) {
+            if (note.judged) continue;
+            const diff = (note.time - state.elapsed) * 1000;
+            if (diff < -CONFIG.JUDGE_GOOD - 50) continue;
+            if (Math.abs(diff) < Math.abs(bestDiff)) {
+                bestDiff = diff;
+                bestNote = note;
+            }
+        }
+
+        if (!bestNote) {
+            addStampEffect(x, y, 'rgba(180,180,180,0.3)', '•');
+            playMissSound();
+            return;
+        }
+
+        const diff = bestDiff;
+        let type = 'miss';
+        let scoreAdd = 0;
+
+        if (Math.abs(diff) <= CONFIG.JUDGE_PERFECT) {
+            type = 'perfect';
+            scoreAdd = 100 + Math.floor(Math.max(0, state.combo) * 1.5);
+            state.perfectCount++;
+            playPerfectSound();
+            addStampEffect(x, y, '#6fcf97', '✅ 批准');
+            showJudge('Perfect', 'perfect');
+        } else if (Math.abs(diff) <= CONFIG.JUDGE_GOOD) {
+            type = 'good';
+            scoreAdd = 50 + Math.floor(state.combo * 0.8);
+            state.goodCount++;
+            playGoodSound();
+            addStampEffect(x, y, '#f2c94a', '✓ 通过');
+            showJudge('Good', 'good');
+        } else {
+            type = 'miss';
+            scoreAdd = 0;
+            state.missCount++;
+            playMissSound();
+            showJudge('Miss', 'miss');
+        }
+
+        bestNote.judged = true;
+        bestNote.judgedType = type;
+
+        if (type !== 'miss') {
+            state.combo++;
+            state.score += scoreAdd;
+            if (state.combo > state.maxCombo) {
+                state.maxCombo = state.combo;
+            }
+            if (state.combo > 0 && state.combo % 10 === 0) {
+                playTone(600 + state.combo * 2, 0.08, 'sine', 0.08);
+            }
+        } else {
+            state.combo = 0;
+        }
+
+        playStampSound();
+        updateCombo();
+        updateHUD();
+
+        const allJudged = state.notes.every(n => n.judged);
+        if (allJudged && state.isPlaying) {
+            state.isPlaying = false;
+            state.isFinished = true;
+            setTimeout(showEndScreen, 400);
+        }
+    }
+
+    // ---------- 特效函数 ----------
+    function addStampEffect(x, y, color, text) {
+        if (state.stampEffects.length >= 8) {
+            state.stampEffects.splice(0, 1);
+        }
+        state.stampEffects.push({
+            x,
+            y,
+            color,
+            text: text || '批准',
+            progress: 0,
+        });
+    }
+
+    function showJudge(text, type) {
+        const el = judgeText;
+        el.textContent = text;
+        el.className = 'judge-text ' + type;
+        void el.offsetWidth;
+        el.classList.add('show');
+        clearTimeout(el._timer);
+        el._timer = setTimeout(() => {
+            el.classList.remove('show');
+        }, 500);
+    }
+
+    function updateCombo() {
+        const val = state.combo;
+        comboDisplay.textContent = val;
+        comboBigNum.textContent = val;
+        if (val > 0) {
+            comboBig.classList.add('active');
+        } else {
+            comboBig.classList.remove('active');
+        }
+    }
+
+    function updateHUD() {
+        scoreDisplay.textContent = state.score;
+        const total = state.perfectCount + state.goodCount + state.missCount;
+        const acc = total > 0 ? Math.round(((state.perfectCount + state.goodCount) / total) * 100) : 0;
+        accuracyDisplay.textContent = acc + '%';
+        updateCombo();
+    }
+
+    // ---------- 结束界面 ----------
+    function showEndScreen() {
+        const total = state.perfectCount + state.goodCount + state.missCount;
+        const acc = total > 0 ? Math.round(((state.perfectCount + state.goodCount) / total) * 100) : 0;
+
+        finalScore.textContent = state.score;
+        finalPerfect.textContent = state.perfectCount;
+        finalGood.textContent = state.goodCount;
+        finalMiss.textContent = state.missCount;
+
+        let grade = '⭐';
+        if (acc >= 95 && state.perfectCount > total * 0.6) grade = '🏆';
+        else if (acc >= 85) grade = '🥇';
+        else if (acc >= 70) grade = '🥈';
+        else if (acc >= 50) grade = '🥉';
+        else grade = '📋';
+        gradeEmoji.textContent = grade;
+
+        endOverlay.classList.remove('hidden');
+    }
+
+    // ---------- 开始游戏 ----------
+    function startGame() {
+        initAudio();
+        initGame();
+        startOverlay.classList.add('hidden');
+        endOverlay.classList.add('hidden');
+        state.isPlaying = true;
+        state.isFinished = false;
+        state.startTime = 0;
+        state.elapsed = 0;
+        state.noteIndex = 0;
+        state.currentTime = 0;
+        state.stampEffects = [];
+        for (const note of state.notes) {
+            note.judged = false;
+            note.judgedType = null;
+        }
+        updateHUD();
+        updateCombo();
+        if (state.animFrame) cancelAnimationFrame(state.animFrame);
+        state.animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function goHome() {
+        endOverlay.classList.add('hidden');
+        startOverlay.classList.remove('hidden');
+        state.isPlaying = false;
+        state.isFinished = false;
+        if (state.animFrame) cancelAnimationFrame(state.animFrame);
+        state.animFrame = null;
+        render();
+    }
+
+    // ---------- 事件绑定 ----------
+    canvas.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        handleStamp(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        if (touch) {
+            handleStamp(touch.clientX, touch.clientY);
+        }
+    }, { passive: false });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.code === 'Space') {
+            e.preventDefault();
+            if (state.isPlaying && !state.isFinished) {
+                const rect = canvas.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height * 0.78;
+                handleStamp(cx, cy);
+            }
+        }
+        if (e.key === 'Enter' && !startOverlay.classList.contains('hidden')) {
+            startBtn.click();
+        }
+    });
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+    homeBtn.addEventListener('click', goHome);
+
+    toggleSoundBtn.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        toggleSoundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+        if (soundEnabled) initAudio();
+    });
+
+    // ---------- 初始渲染 ----------
+    initGame();
+    render();
+
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        render();
+    });
+
+    console.log('📋 批准 · 盖章音游已加载（速度已调慢）');
+</script>
+</body>
+</html>
