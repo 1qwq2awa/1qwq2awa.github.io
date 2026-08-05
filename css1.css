@@ -22,7 +22,7 @@
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
 }
-.end2a,.end3a,.end4a{
+.end2a,.end3a,.end4a,.end5a,.end6a{
     color: white;
     background-color: #000;
     border-top-left-radius: 10px;
@@ -76,7 +76,7 @@
   transform: scaleX(1);
   transform-origin: bottom left;
 }
-.ftx_1,.ftx_3,.ftx_2,.ftx_4{
+.ftx_1,.ftx_3,.ftx_2,.ftx_4,.ftx_5,.ftx_6{
     background-color: black;
     transform: translateY(-8px);
     box-shadow: 0 10px 20px #5c5c5c;
@@ -91,7 +91,7 @@
     overflow: hidden;
     z-index: 1;
 }
-.end1,.end3,.end2,.end4{
+.end1,.end3,.end2,.end4,.end5,.end6{
     background-color: #5c5c5c;
     transform: translateY(-8px);
     box-shadow: 0 10px 20px #4a4a4a;
