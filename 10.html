@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>5秒生活常识挑战 · 40题</title>
+    <style>
+        /* ===== 全局重置 & 字体 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(145deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* ===== 主容器 ===== */
+        .game-container {
+            width: 100%;
+            max-width: 560px;
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 40px;
+            padding: 32px 28px 28px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: -60%;
+            left: -60%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(120, 100, 255, 0.10), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== 通用 ===== */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* ===== 开始界面 ===== */
+        #startScreen {
+            position: relative;
+            z-index: 1;
+            padding: 16px 0 8px;
+        }
+
+        .game-icon {
+            font-size: 64px;
+            margin-bottom: 8px;
+            display: block;
+            text-align: center;
+        }
+
+        .game-title {
+            font-size: 34px;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+
+        .game-subtitle {
+            text-align: center;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 4px;
+            font-weight: 300;
+            margin-bottom: 32px;
+        }
+
+        .start-features {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 36px;
+            flex-wrap: wrap;
+        }
+
+        .start-features span {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 6px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .start-features span .emoji {
+            font-size: 18px;
+        }
+
+        .btn-primary {
+            display: block;
+            width: 100%;
+            padding: 18px 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.35);
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.50);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent 60%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .btn-primary:hover::after {
+            opacity: 1;
+        }
+
+        /* ===== 游戏界面 ===== */
+        #gameScreen {
+            position: relative;
+            z-index: 1;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .header-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .header-item .label {
+            opacity: 0.6;
+        }
+
+        .header-item .value {
+            color: #fff;
+            font-weight: 700;
+            font-size: 18px;
+            min-width: 28px;
+            text-align: center;
+        }
+
+        .header-item .value.score-value {
+            color: #f9d976;
+        }
+
+        .header-item .value.qnum-value {
+            color: #a8d8ea;
+        }
+
+        .timer-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .timer-circle {
+            position: relative;
+            width: 72px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timer-circle svg {
+            transform: rotate(-90deg);
+            width: 72px;
+            height: 72px;
+        }
+
+        .timer-circle .bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 5;
+        }
+
+        .timer-circle .progress {
+            fill: none;
+            stroke: #4facfe;
+            stroke-width: 5;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+        }
+
+        .timer-text {
+            position: absolute;
+            font-size: 28px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .timer-text.warning {
+            color: #ffb347;
+        }
+
+        .timer-text.danger {
+            color: #ff5252;
+            animation: pulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(1.12);
+            }
+        }
+
+        .question-area {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 20px;
+            padding: 22px 18px;
+            margin-bottom: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .question-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.20);
+            transform: translateX(4px);
+        }
+
+        .option-btn:active:not(.disabled) {
+            transform: scale(0.98);
+        }
+
+        .option-btn .option-letter {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            margin-right: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.2s;
+        }
+
+        .option-btn .option-text {
+            display: inline;
+        }
+
+        .option-btn.correct {
+            background: rgba(76, 175, 80, 0.25) !important;
+            border-color: #4CAF50 !important;
+            transform: translateX(4px);
+        }
+
+        .option-btn.correct .option-letter {
+            background: #4CAF50;
+            color: #fff;
+        }
+
+        .option-btn.wrong {
+            background: rgba(255, 82, 82, 0.25) !important;
+            border-color: #ff5252 !important;
+            transform: translateX(4px);
+        }
+
+        .option-btn.wrong .option-letter {
+            background: #ff5252;
+            color: #fff;
+        }
+
+        .option-btn.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .option-btn.show-correct {
+            background: rgba(76, 175, 80, 0.15) !important;
+            border-color: #4CAF50 !important;
+        }
+
+        .option-btn.show-correct .option-letter {
+            background: #4CAF50;
+            color: #fff;
+        }
+
+        .feedback {
+            margin-top: 14px;
+            padding: 12px;
+            border-radius: 14px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.25s ease;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feedback.success {
+            color: #81c784;
+            background: rgba(76, 175, 80, 0.12);
+        }
+
+        .feedback.error {
+            color: #ff8a80;
+            background: rgba(255, 82, 82, 0.12);
+        }
+
+        .feedback.timeout {
+            color: #ffb74d;
+            background: rgba(255, 179, 71, 0.12);
+        }
+
+        .feedback.empty {
+            opacity: 0;
+        }
+
+        /* ===== 结束界面 ===== */
+        #endScreen {
+            position: relative;
+            z-index: 1;
+            padding: 12px 0 4px;
+            text-align: center;
+        }
+
+        .end-icon {
+            font-size: 72px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .end-title {
+            font-size: 30px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .end-subtitle {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 24px;
+        }
+
+        .end-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 14px 6px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .stat-card .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #fff;
+            display: block;
+        }
+
+        .stat-card .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 2px;
+            display: block;
+        }
+
+        .stat-card.highlight .stat-value {
+            color: #f9d976;
+        }
+
+        .stat-card.highlight2 .stat-value {
+            color: #4facfe;
+        }
+
+        .stat-card.highlight3 .stat-value {
+            color: #f093fb;
+        }
+
+        .end-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-secondary {
+            display: block;
+            width: 100%;
+            padding: 16px 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1.5px solid rgba(255, 255, 255, 0.12);
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 1px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.97);
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 22px 16px 18px;
+                border-radius: 28px;
+            }
+            .game-title {
+                font-size: 28px;
+            }
+            .question-text {
+                font-size: 17px;
+            }
+            .option-btn {
+                padding: 12px 14px;
+                font-size: 15px;
+            }
+            .timer-circle {
+                width: 60px;
+                height: 60px;
+            }
+            .timer-circle svg {
+                width: 60px;
+                height: 60px;
+            }
+            .timer-text {
+                font-size: 24px;
+            }
+            .header-item .value {
+                font-size: 16px;
+            }
+            .end-stats {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 6px;
+            }
+            .stat-card .stat-value {
+                font-size: 22px;
+            }
+            .game-header {
+                flex-wrap: wrap;
+                gap: 6px 12px;
+                justify-content: center;
+            }
+            .start-features span {
+                font-size: 12px;
+                padding: 4px 12px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .game-container {
+                padding: 16px 12px 14px;
+            }
+            .question-text {
+                font-size: 15px;
+            }
+            .option-btn {
+                font-size: 13px;
+                padding: 10px 12px;
+            }
+            .timer-circle {
+                width: 50px;
+                height: 50px;
+            }
+            .timer-circle svg {
+                width: 50px;
+                height: 50px;
+            }
+            .timer-text {
+                font-size: 20px;
+            }
+        }
+
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="app">
+        <!-- ========================================= -->
+        <!-- 开始界面 -->
+        <!-- ========================================= -->
+        <div id="startScreen">
+            <span class="game-icon">🧠</span>
+            <div class="game-title">生活常识挑战</div>
+            <div class="game-subtitle">⚡ 5 秒 • 快问快答</div>
+
+            <div class="start-features">
+                <span><span class="emoji">📚</span> 40 道常识</span>
+                <span><span class="emoji">⏱️</span> 每题 5 秒</span>
+                <span><span class="emoji">🏆</span> 答对 +10 分</span>
+            </div>
+
+            <button class="btn-primary" id="startBtn">开始挑战 →</button>
+        </div>
+
+        <!-- ========================================= -->
+        <!-- 游戏界面 -->
+        <!-- ========================================= -->
+        <div id="gameScreen" class="hidden">
+            <div class="game-header">
+                <div class="header-item">
+                    <span class="label">🏅</span>
+                    <span class="value score-value" id="scoreDisplay">0</span>
+                </div>
+                <div class="header-item">
+                    <span class="label">📌</span>
+                    <span class="value qnum-value" id="qnumDisplay">1/40</span>
+                </div>
+                <div class="header-item">
+                    <span class="label">✅</span>
+                    <span class="value" id="correctCountDisplay" style="color:#81c784;">0</span>
+                </div>
+            </div>
+
+            <div class="timer-section">
+                <div class="timer-circle">
+                    <svg viewBox="0 0 72 72">
+                        <circle class="bg" cx="36" cy="36" r="30" />
+                        <circle class="progress" id="timerProgress" cx="36" cy="36" r="30"
+                        stroke-dasharray="188.5" stroke-dashoffset="0" />
+                    </svg>
+                    <span class="timer-text" id="timerText">5</span>
+                </div>
+            </div>
+
+            <div class="question-area">
+                <div class="question-text" id="questionText">加载题目中…</div>
+            </div>
+
+            <div class="options-grid" id="optionsContainer">
+                <button class="option-btn" data-index="0">
+                    <span class="option-letter">A</span>
+                    <span class="option-text">选项 A</span>
+                </button>
+                <button class="option-btn" data-index="1">
+                    <span class="option-letter">B</span>
+                    <span class="option-text">选项 B</span>
+                </button>
+                <button class="option-btn" data-index="2">
+                    <span class="option-letter">C</span>
+                    <span class="option-text">选项 C</span>
+                </button>
+                <button class="option-btn" data-index="3">
+                    <span class="option-letter">D</span>
+                    <span class="option-text">选项 D</span>
+                </button>
+            </div>
+
+            <div class="feedback empty" id="feedback"></div>
+        </div>
+
+        <!-- ========================================= -->
+        <!-- 结束界面 -->
+        <!-- ========================================= -->
+        <div id="endScreen" class="hidden">
+            <span class="end-icon" id="endIcon">🏁</span>
+            <div class="end-title" id="endTitle">游戏结束</div>
+            <div class="end-subtitle" id="endSubtitle">你完成了挑战</div>
+
+            <div class="end-stats">
+                <div class="stat-card highlight">
+                    <span class="stat-value" id="finalScore">0</span>
+                    <span class="stat-label">总得分</span>
+                </div>
+                <div class="stat-card highlight2">
+                    <span class="stat-value" id="finalCorrect">0</span>
+                    <span class="stat-label">答对题数</span>
+                </div>
+                <div class="stat-card highlight3">
+                    <span class="stat-value" id="finalAccuracy">0%</span>
+                    <span class="stat-label">正确率</span>
+                </div>
+            </div>
+
+            <div class="end-btn-group">
+                <button class="btn-primary" id="restartBtn">🔄 再来一局</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        //  题库 (40 道生活常识) —— 原20题 + 新增20题
+        // ================================================================
+        const QUESTIONS = [
+            // ---- 原有 20 题 ----
+            {
+                question: '人体最大的器官是什么？',
+                options: ['皮肤', '肝脏', '心脏', '大脑'],
+                answer: 0
+            }, {
+                question: '地球上最长的河流是哪条？',
+                options: ['尼罗河', '亚马逊河', '长江', '密西西比河'],
+                answer: 0
+            }, {
+                question: '太阳系中最大的行星是？',
+                options: ['木星', '土星', '天王星', '海王星'],
+                answer: 0
+            }, {
+                question: '人体骨骼共有多少块？',
+                options: ['200块', '206块', '210块', '215块'],
+                answer: 1
+            }, {
+                question: '世界上最深的海沟是？',
+                options: ['马里亚纳海沟', '汤加海沟', '日本海沟', '秘鲁-智利海沟'],
+                answer: 0
+            }, {
+                question: '人体最硬的物质是？',
+                options: ['骨骼', '牙釉质', '指甲', '头发'],
+                answer: 1
+            }, {
+                question: '世界上最高的山峰是？',
+                options: ['乔戈里峰', '干城章嘉峰', '珠穆朗玛峰', '洛子峰'],
+                answer: 2
+            }, {
+                question: '地球的天然卫星是？',
+                options: ['火星', '月球', '金星', '太阳'],
+                answer: 1
+            }, {
+                question: '世界上最大的海洋是？',
+                options: ['大西洋', '印度洋', '太平洋', '北冰洋'],
+                answer: 2
+            }, {
+                question: '人体最大的细胞是？',
+                options: ['精子细胞', '红细胞', '卵细胞', '白细胞'],
+                answer: 2
+            }, {
+                question: '世界上最长的城墙是？',
+                options: ['中国长城', '柏林墙', '哈德良长城', '罗马城墙'],
+                answer: 0
+            }, {
+                question: '人体最长的骨骼是？',
+                options: ['胫骨', '肱骨', '股骨', '脊柱'],
+                answer: 2
+            }, {
+                question: '世界上最大的沙漠是？',
+                options: ['撒哈拉沙漠', '阿拉伯沙漠', '戈壁沙漠', '卡拉哈里沙漠'],
+                answer: 0
+            }, {
+                question: '人体最大的内脏器官是？',
+                options: ['心脏', '肺', '肝脏', '胃'],
+                answer: 2
+            }, {
+                question: '世界上最快的陆地动物是？',
+                options: ['狮子', '猎豹', '羚羊', '马'],
+                answer: 1
+            }, {
+                question: '人体含量最多的元素是？',
+                options: ['碳', '氢', '氧', '氮'],
+                answer: 2
+            }, {
+                question: '世界上最大的岛屿是？',
+                options: ['格陵兰岛', '新几内亚岛', '婆罗洲', '马达加斯加'],
+                answer: 0
+            }, {
+                question: '人体最长的神经是？',
+                options: ['视神经', '坐骨神经', '听神经', '迷走神经'],
+                answer: 1
+            }, {
+                question: '地球上最长的山脉是？',
+                options: ['安第斯山脉', '喜马拉雅山脉', '阿尔卑斯山脉', '落基山脉'],
+                answer: 0
+            }, {
+                question: '人体最活跃的肌肉是？',
+                options: ['心肌', '眼肌', '舌肌', '咀嚼肌'],
+                answer: 1
+            },
+
+            // ---- 新增 20 题 (21~40) ----
+            {
+                question: '人体最大的肌肉是？',
+                options: ['臀大肌', '股四头肌', '背阔肌', '胸大肌'],
+                answer: 0
+            }, {
+                question: '地球上最冷的大陆是？',
+                options: ['南极洲', '北极洲', '亚洲', '欧洲'],
+                answer: 0
+            }, {
+                question: '太阳系中最小的行星是？',
+                options: ['水星', '金星', '火星', '冥王星'],
+                answer: 0
+            }, {
+                question: '人体最长的消化器官是？',
+                options: ['小肠', '大肠', '胃', '食道'],
+                answer: 0
+            }, {
+                question: '世界上最大的淡水湖是？',
+                options: ['苏必利尔湖', '维多利亚湖', '休伦湖', '贝加尔湖'],
+                answer: 0
+            }, {
+                question: '人体最硬的骨头是？',
+                options: ['股骨', '胫骨', '肱骨', '颅骨'],
+                answer: 0
+            }, {
+                question: '世界上最大的珊瑚礁是？',
+                options: ['大堡礁', '马尔代夫', '红海珊瑚礁', '加勒比珊瑚礁'],
+                answer: 0
+            }, {
+                question: '人体最大的淋巴器官是？',
+                options: ['脾脏', '胸腺', '扁桃体', '淋巴结'],
+                answer: 0
+            }, {
+                question: '地球上陆地海拔最低点是？',
+                options: ['死海', '里海', '贝加尔湖', '吐鲁番盆地'],
+                answer: 0
+            }, {
+                question: '人体最大的动脉是？',
+                options: ['主动脉', '肺动脉', '颈动脉', '股动脉'],
+                answer: 0
+            }, {
+                question: '世界上面积最大的高原是？',
+                options: ['巴西高原', '青藏高原', '蒙古高原', '伊朗高原'],
+                answer: 0
+            }, {
+                question: '人体最细的血管是？',
+                options: ['毛细血管', '小动脉', '小静脉', '微动脉'],
+                answer: 0
+            }, {
+                question: '世界上最长的海峡是？',
+                options: ['莫桑比克海峡', '马六甲海峡', '英吉利海峡', '德雷克海峡'],
+                answer: 0
+            }, {
+                question: '人体最大的腺体是？',
+                options: ['肝脏', '胰腺', '唾液腺', '甲状腺'],
+                answer: 0
+            }, {
+                question: '世界上最大的半岛是？',
+                options: ['阿拉伯半岛', '印度半岛', '中南半岛', '斯堪的纳维亚半岛'],
+                answer: 0
+            }, {
+                question: '人体最小的骨骼是？',
+                options: ['镫骨', '锤骨', '砧骨', '指骨'],
+                answer: 0
+            }, {
+                question: '世界上最大的内陆国是？',
+                options: ['哈萨克斯坦', '蒙古', '俄罗斯', '中国'],
+                answer: 0
+            }, {
+                question: '人体最长的静脉是？',
+                options: ['大隐静脉', '小隐静脉', '股静脉', '门静脉'],
+                answer: 0
+            }, {
+                question: '地球上最大的三角洲是？',
+                options: ['恒河三角洲', '长江三角洲', '尼罗河三角洲', '密西西比三角洲'],
+                answer: 0
+            }, {
+                question: '人体最大的关节是？',
+                options: ['膝关节', '髋关节', '肩关节', '肘关节'],
+                answer: 0
+            }
+        ];
+
+        // ================================================================
+        //  游戏状态
+        // ================================================================
+        const TOTAL_QUESTIONS = QUESTIONS.length; // 自动计算，现为40
+        const TIME_LIMIT = 5;
+        const SCORE_PER_Q = 10;
+
+        let state = {
+            questions: [],
+            currentIndex: 0,
+            score: 0,
+            correctCount: 0,
+            isPlaying: false,
+            isEnded: false,
+            timeLeft: TIME_LIMIT,
+            timerInterval: null,
+            isProcessing: false,
+            answeredCount: 0,
+        };
+
+        // ================================================================
+        //  DOM 引用
+        // ================================================================
+        const $ = (id) => document.getElementById(id);
+        const startScreen = $('startScreen');
+        const gameScreen = $('gameScreen');
+        const endScreen = $('endScreen');
+        const startBtn = $('startBtn');
+        const restartBtn = $('restartBtn');
+
+        const questionText = $('questionText');
+        const optionsContainer = $('optionsContainer');
+        const optionBtns = optionsContainer.querySelectorAll('.option-btn');
+        const feedback = $('feedback');
+
+        const scoreDisplay = $('scoreDisplay');
+        const qnumDisplay = $('qnumDisplay');
+        const correctCountDisplay = $('correctCountDisplay');
+        const timerText = $('timerText');
+        const timerProgress = $('timerProgress');
+
+        const finalScore = $('finalScore');
+        const finalCorrect = $('finalCorrect');
+        const finalAccuracy = $('finalAccuracy');
+        const endIcon = $('endIcon');
+        const endTitle = $('endTitle');
+        const endSubtitle = $('endSubtitle');
+
+        // ================================================================
+        //  工具函数
+        // ================================================================
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // ================================================================
+        //  界面渲染
+        // ================================================================
+        function renderQuestion() {
+            const q = state.questions[state.currentIndex];
+            if (!q) return;
+
+            questionText.textContent = q.question;
+            const letters = ['A', 'B', 'C', 'D'];
+            optionBtns.forEach((btn, idx) => {
+                const textSpan = btn.querySelector('.option-text');
+                textSpan.textContent = q.options[idx] || '---';
+                btn.querySelector('.option-letter').textContent = letters[idx];
+                btn.className = 'option-btn';
+                btn.dataset.index = idx;
+                btn.disabled = false;
+            });
+
+            qnumDisplay.textContent = `${state.currentIndex + 1}/${TOTAL_QUESTIONS}`;
+            scoreDisplay.textContent = state.score;
+            correctCountDisplay.textContent = state.correctCount;
+        }
+
+        function updateTimerDisplay(timeLeft) {
+            timerText.textContent = timeLeft;
+            const circumference = 2 * Math.PI * 30;
+            const offset = circumference * (1 - timeLeft / TIME_LIMIT);
+            timerProgress.style.strokeDashoffset = offset;
+
+            const ratio = timeLeft / TIME_LIMIT;
+            let color;
+            if (ratio > 0.5) {
+                const t = (ratio - 0.5) * 2;
+                color = `rgb(${Math.round(76 + (255 - 76) * (1 - t))}, ${Math.round(175 + (179 - 175) * (1 - t))}, ${Math.round(80 + (71 - 80) * (1 - t))})`;
+            } else {
+                const t = ratio * 2;
+                color = `rgb(${Math.round(255)}, ${Math.round(179 + (82 - 179) * (1 - t))}, ${Math.round(71 + (82 - 71) * (1 - t))})`;
+            }
+            timerProgress.style.stroke = color;
+
+            timerText.className = 'timer-text';
+            if (timeLeft <= 1) {
+                timerText.classList.add('danger');
+            } else if (timeLeft <= 2) {
+                timerText.classList.add('warning');
+            }
+        }
+
+        function showFeedback(message, type) {
+            feedback.textContent = message;
+            feedback.className = 'feedback';
+            if (type) {
+                feedback.classList.add(type);
+            } else {
+                feedback.classList.add('empty');
+            }
+        }
+
+        function clearFeedback() {
+            showFeedback('', 'empty');
+        }
+
+        function enableOptions(enabled) {
+            optionBtns.forEach(btn => {
+                if (enabled) {
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('disabled');
+                }
+            });
+        }
+
+        // ================================================================
+        //  游戏核心逻辑
+        // ================================================================
+        function startGame() {
+            state.questions = shuffleArray([...QUESTIONS]);
+            state.currentIndex = 0;
+            state.score = 0;
+            state.correctCount = 0;
+            state.isPlaying = true;
+            state.isEnded = false;
+            state.isProcessing = false;
+            state.answeredCount = 0;
+            state.timeLeft = TIME_LIMIT;
+
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+
+            clearFeedback();
+            enableOptions(true);
+            renderQuestion();
+            startTimer();
+        }
+
+        function startTimer() {
+            state.timeLeft = TIME_LIMIT;
+            updateTimerDisplay(state.timeLeft);
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                state.timeLeft -= 1;
+                updateTimerDisplay(state.timeLeft);
+                if (state.timeLeft <= 0) {
+                    clearInterval(state.timerInterval);
+                    state.timerInterval = null;
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+            state.timeLeft = TIME_LIMIT;
+            updateTimerDisplay(state.timeLeft);
+        }
+
+        function stopTimer() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+        }
+
+        function handleTimeout() {
+            if (state.isProcessing || state.isEnded) return;
+            state.isProcessing = true;
+            state.isEnded = true;
+            state.isPlaying = false;
+            enableOptions(false);
+            showFeedback('⏰ 时间到！', 'timeout');
+
+            const q = state.questions[state.currentIndex];
+            optionBtns.forEach((btn, idx) => {
+                if (idx === q.answer) {
+                    btn.classList.add('show-correct');
+                }
+            });
+
+            setTimeout(() => {
+                endGame(false, '⏰ 时间到！');
+            }, 1200);
+        }
+
+        function handleOptionClick(e) {
+            const btn = e.currentTarget;
+            if (state.isProcessing || state.isEnded || btn.disabled) return;
+            if (!state.isPlaying) return;
+
+            const selectedIndex = parseInt(btn.dataset.index, 10);
+            const q = state.questions[state.currentIndex];
+            const isCorrect = (selectedIndex === q.answer);
+
+            state.isProcessing = true;
+            state.isEnded = true;
+            state.isPlaying = false;
+            enableOptions(false);
+            stopTimer();
+
+            optionBtns.forEach((b, idx) => {
+                if (idx === q.answer) {
+                    b.classList.add('correct');
+                } else if (idx === selectedIndex && !isCorrect) {
+                    b.classList.add('wrong');
+                }
+            });
+
+            if (isCorrect) {
+                state.score += SCORE_PER_Q;
+                state.correctCount += 1;
+                scoreDisplay.textContent = state.score;
+                correctCountDisplay.textContent = state.correctCount;
+                showFeedback('✅ 正确！ +10 分', 'success');
+
+                setTimeout(() => {
+                    state.isProcessing = false;
+                    state.isEnded = false;
+                    state.isPlaying = true;
+                    clearFeedback();
+                    enableOptions(true);
+                    state.currentIndex += 1;
+                    if (state.currentIndex >= TOTAL_QUESTIONS) {
+                        state.isPlaying = false;
+                        state.isEnded = true;
+                        enableOptions(false);
+                        showFeedback('🎉 恭喜通关！', 'success');
+                        setTimeout(() => {
+                            endGame(true, '🎉 完美通关！');
+                        }, 1000);
+                    } else {
+                        renderQuestion();
+                        resetTimer();
+                        startTimer();
+                    }
+                }, 800);
+            } else {
+                showFeedback(`❌ 错误！正确答案是：${q.options[q.answer]}`, 'error');
+                setTimeout(() => {
+                    endGame(false, '❌ 答错了…');
+                }, 1500);
+            }
+        }
+
+        function endGame(isWin, title) {
+            state.isPlaying = false;
+            state.isEnded = true;
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+
+            const totalAttempted = state.currentIndex + (state.isEnded ? 1 : 0);
+            const accuracy = totalAttempted > 0 ? Math.round((state.correctCount / totalAttempted) * 100) : 0;
+
+            finalScore.textContent = state.score;
+            finalCorrect.textContent = `${state.correctCount} / ${TOTAL_QUESTIONS}`;
+            finalAccuracy.textContent = `${accuracy}%`;
+
+            if (isWin) {
+                endIcon.textContent = '🏆';
+                endTitle.textContent = '🎊 恭喜通关！';
+                endSubtitle.textContent = '你答对了所有题目，太棒了！';
+            } else {
+                endIcon.textContent = '💪';
+                endTitle.textContent = title;
+                endSubtitle.textContent = `你答对了 ${state.correctCount} 题，继续加油！`;
+            }
+        }
+
+        // ================================================================
+        //  事件绑定
+        // ================================================================
+        startBtn.addEventListener('click', startGame);
+
+        restartBtn.addEventListener('click', () => {
+            endScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            state.isPlaying = false;
+            state.isEnded = false;
+            state.isProcessing = false;
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+        });
+
+        optionBtns.forEach(btn => {
+            btn.addEventListener('click', handleOptionClick);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '1' && e.key <= '4') {
+                const idx = parseInt(e.key, 10) - 1;
+                if (optionBtns[idx] && !optionBtns[idx].disabled) {
+                    optionBtns[idx].click();
+                }
+            }
+            if (e.key === 'Enter' || e.key === ' ') {
+                if (!startScreen.classList.contains('hidden')) {
+                    startBtn.click();
+                } else if (!endScreen.classList.contains('hidden')) {
+                    restartBtn.click();
+                }
+            }
+        });
+
+        // ================================================================
+        //  初始化
+        // ================================================================
+        startScreen.classList.remove('hidden');
+        gameScreen.classList.add('hidden');
+        endScreen.classList.add('hidden');
+
+        console.log(`🧠 生活常识挑战已加载，共 ${TOTAL_QUESTIONS} 道题`);
+    </script>
+</body>
+</html>

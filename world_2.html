@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>守护生命之源 · 保护淡水资源</title>
+    <style>
+        /* ===== 全局重置 & 基础 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #0a1628;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== Canvas 背景层 ===== */
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ===== 气泡容器 ===== */
+        .bubbles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            bottom: -80px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.25), rgba(180, 230, 255, 0.10));
+            box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.05), 0 0 20px rgba(100, 200, 255, 0.08);
+            animation: floatUp linear infinite;
+            will-change: transform;
+            pointer-events: none;
+            backdrop-filter: blur(1px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) translateX(0) scale(1) rotate(0deg);
+                opacity: 0.4;
+            }
+            25% {
+                transform: translateY(-25vh) translateX(15px) scale(1.02) rotate(3deg);
+                opacity: 0.7;
+            }
+            50% {
+                transform: translateY(-50vh) translateX(-10px) scale(0.98) rotate(-2deg);
+                opacity: 0.6;
+            }
+            75% {
+                transform: translateY(-75vh) translateX(20px) scale(1.01) rotate(4deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-110vh) translateX(-5px) scale(0.95) rotate(-1deg);
+                opacity: 0;
+            }
+        }
+
+        /* ===== 文章卡片 ===== */
+        .article-wrapper {
+            position: relative;
+            z-index: 2;
+            width: 90%;
+            max-width: 860px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .article-card {
+            background: rgba(10, 22, 40, 0.45);
+            backdrop-filter: blur(24px) saturate(1.4);
+            -webkit-backdrop-filter: blur(24px) saturate(1.4);
+            border-radius: 40px;
+            padding: 48px 56px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            box-shadow:
+                0 30px 80px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transition: box-shadow 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 卡片内光晕 */
+        .article-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(80, 180, 255, 0.06), transparent 70%);
+            pointer-events: none;
+            animation: shimmer 12s ease-in-out infinite alternate;
+        }
+        @keyframes shimmer {
+            0% {
+                transform: translate(-5%, -5%) rotate(0deg);
+            }
+            100% {
+                transform: translate(5%, 5%) rotate(3deg);
+            }
+        }
+
+        .article-content {
+            position: relative;
+            z-index: 3;
+        }
+
+        /* ===== 标题 ===== */
+        .article-title {
+            font-size: clamp(2.6rem, 8vw, 4.2rem);
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            line-height: 1.15;
+            margin-bottom: 0.1em;
+            background: linear-gradient(135deg, #b8e6ff 0%, #7ac7ff 30%, #3d9eff 60%, #7ac7ff 85%, #b8e6ff 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradShift 6s ease-in-out infinite alternate;
+            text-shadow: 0 0 60px rgba(60, 150, 255, 0.15);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 1s ease forwards 0.3s;
+        }
+        @keyframes gradShift {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .article-subtitle {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            color: rgba(180, 220, 255, 0.7);
+            margin-bottom: 2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.9s ease forwards 0.6s;
+        }
+
+        /* ===== 段落 ===== */
+        .paragraph {
+            font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+            line-height: 1.9;
+            color: rgba(235, 245, 255, 0.92);
+            margin-bottom: 1.6rem;
+            letter-spacing: 0.01em;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(24px);
+            animation: fadeUp 0.9s ease forwards;
+            padding-left: 4px;
+        }
+        .paragraph:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 每个段落不同延迟 (递增0.3s) */
+        .paragraph:nth-of-type(1) {
+            animation-delay: 0.9s;
+        }
+        .paragraph:nth-of-type(2) {
+            animation-delay: 1.2s;
+        }
+        .paragraph:nth-of-type(3) {
+            animation-delay: 1.5s;
+        }
+        .paragraph:nth-of-type(4) {
+            animation-delay: 1.8s;
+        }
+        .paragraph:nth-of-type(5) {
+            animation-delay: 2.1s;
+        }
+        .paragraph:nth-of-type(6) {
+            animation-delay: 2.4s;
+        }
+        .paragraph:nth-of-type(7) {
+            animation-delay: 2.7s;
+        }
+        .paragraph:nth-of-type(8) {
+            animation-delay: 3.0s;
+        }
+        .paragraph:nth-of-type(9) {
+            animation-delay: 3.3s;
+        }
+        .paragraph:nth-of-type(10) {
+            animation-delay: 3.6s;
+        }
+        .paragraph:nth-of-type(11) {
+            animation-delay: 3.9s;
+        }
+
+        /* 段落首字母装饰 */
+        .paragraph::first-letter {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #7ac7ff;
+            text-shadow: 0 0 30px rgba(60, 150, 255, 0.3);
+            margin-right: 2px;
+        }
+
+        /* 段落中的强调 */
+        .highlight {
+            color: #8fd4ff;
+            font-weight: 500;
+            text-shadow: 0 0 30px rgba(60, 150, 255, 0.15);
+            border-bottom: 1px solid rgba(120, 200, 255, 0.2);
+            padding-bottom: 1px;
+        }
+
+        /* ===== 底部装饰文字 ===== */
+        .article-footer {
+            margin-top: 2.4rem;
+            padding-top: 1.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 4.2s;
+        }
+        .article-footer .tag {
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            color: rgba(180, 215, 255, 0.5);
+            font-weight: 300;
+        }
+        .article-footer .tag i {
+            font-style: normal;
+            display: inline-block;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .article-footer .water-drop {
+            font-size: 1.4rem;
+            opacity: 0.6;
+            animation: dropFloat 3s ease-in-out infinite;
+        }
+        @keyframes dropFloat {
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(-6px) scale(1.08);
+            }
+        }
+
+        /* ===== 渐入动画 ===== */
+        @keyframes fadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== 鼠标涟漪 (Canvas 上层) ===== */
+        #rippleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .article-card {
+                padding: 28px 24px;
+                border-radius: 28px;
+            }
+            .paragraph {
+                font-size: 0.98rem;
+                line-height: 1.8;
+                margin-bottom: 1.2rem;
+            }
+            .article-title {
+                font-size: clamp(2rem, 7vw, 2.8rem);
+            }
+            .article-subtitle {
+                font-size: 0.85rem;
+                letter-spacing: 0.2em;
+            }
+            .article-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .article-card {
+                padding: 20px 16px;
+                border-radius: 20px;
+            }
+            .paragraph {
+                font-size: 0.92rem;
+                line-height: 1.75;
+            }
+            .article-title {
+                font-size: 1.8rem;
+            }
+            .article-subtitle {
+                font-size: 0.75rem;
+            }
+            .article-wrapper {
+                padding: 10px;
+                margin: 20px auto;
+            }
+        }
+
+        /* ===== 滚动条美化 ===== */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(120, 200, 255, 0.3);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(120, 200, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 背景 Canvas (水波纹) ===== -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- ===== 涟漪 Canvas (鼠标交互) ===== -->
+    <canvas id="rippleCanvas"></canvas>
+
+    <!-- ===== 浮动气泡 ===== -->
+    <div class="bubbles-container" id="bubblesContainer"></div>
+
+    <!-- ===== 文章主体 ===== -->
+    <div class="article-wrapper">
+        <div class="article-card">
+            <div class="article-content">
+
+                <h1 class="article-title">守护生命之源</h1>
+                <div class="article-subtitle">—— 保护淡水资源 · 共创可持续未来</div>
+
+                <p class="paragraph">
+                    水，是地球最宝贵的资源之一，也是所有生命赖以生存的基石。
+                    然而，在全球气候变化与人类活动持续影响下，<span class="highlight">淡水资源</span>正面临前所未有的压力与挑战。
+                </p>
+
+                <p class="paragraph">
+                    据统计，全球约 <span class="highlight">40%</span> 的人口已面临水资源短缺问题。
+                    到 2025 年，这一比例可能上升至三分之二。
+                    水污染、过度开采与生态破坏，正以惊人的速度加速淡水资源的枯竭。
+                </p>
+
+                <p class="paragraph">
+                    淡水资源的分布极不均衡。全球约 <span class="highlight">68.7%</span> 的淡水储存在冰川与永久积雪中，
+                    而直接可用的河湖淡水仅占 <span class="highlight">0.3%</span>。
+                    绝大多数地下水埋藏于深层，开采难度极大且更新缓慢，这使得本就稀缺的淡水更显珍贵。
+                </p>
+
+                <p class="paragraph">
+                    水污染正在从源头扼杀生态系统的健康。工业废水中含有的重金属与化学毒素、
+                    农业活动中大量使用的化肥与农药带来的富营养化，以及生活污水中难以降解的微塑料，
+                    正让曾经清澈的河流变得浑浊不堪，严重破坏了水生生物的栖息环境。
+                </p>
+
+                <p class="paragraph">
+                    全球变暖进一步加剧了水危机的复杂性。气温上升导致高山冰川加速消融，
+                    短期内的极端暴雨与长期干旱交替出现，严重扰乱了自然水循环的节奏。
+                    这不仅减少了可利用的淡水资源总量，还大幅增加了水旱灾害的风险。
+                </p>
+
+                <p class="paragraph">
+                    科技创新为水治理开辟了新的路径。海水淡化技术为沿海缺水城市提供了可靠的新水源，
+                    再生水回用系统让水资源实现高效的循环利用，而智慧灌溉技术则极大减少了农业用水的浪费。
+                    这些创新正在为我们赢得宝贵的时间。
+                </p>
+
+                <p class="paragraph">
+                    保护淡水资源需要系统性的社会行动。联合国已将“清洁饮水和卫生设施”列为可持续发展的重要目标（SDG 6）。
+                    我们应积极参与水源地保护项目，支持环保组织，并通过教育向下一代传递节水意识。
+                </p>
+
+                <p class="paragraph">
+                    日常生活中的节水行动并不复杂，却意义重大。例如，使用节水龙头和马桶、收集雨水浇花、
+                    减少含磷洗涤剂的使用、及时修复家中的漏水管道。这些微小的习惯积累起来，
+                    将汇聚成保护河流湖泊的巨大力量。
+                </p>
+
+                <p class="paragraph">
+                    水是文明的摇篮，是生命的血脉。当我们节约一滴水，不仅是在节省资源，
+                    更是在为地球的未来注入一份生机。善待水资源，就是善待我们自身的生存环境。
+                </p>
+
+                <p class="paragraph">
+                    从今天起，从此刻起，让我们携手守护这份清澈的馈赠。
+                    保护淡水资源，不仅是一句口号，更是关乎人类命运的共同责任与使命。
+                </p>
+
+                <div class="article-footer">
+                    <span class="tag"><i>✦</i> 每一滴水都承载着未来的希望</span>
+                    <span class="water-drop">💧</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  1. 水波纹背景 (Canvas)
+        // ============================================================
+        const bgCanvas = document.getElementById('bgCanvas');
+        const ctx = bgCanvas.getContext('2d');
+
+        let width, height;
+        let time = 0;
+
+        function resizeBg() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            bgCanvas.width = width;
+            bgCanvas.height = height;
+        }
+        window.addEventListener('resize', resizeBg);
+        resizeBg();
+
+        // 波浪参数： [振幅, 频率, 速度, 相位偏移, 颜色, 透明度]
+        const waves = [
+            { amp: 32, freq: 0.008, speed: 0.6, phase: 0, color: 'rgba(120, 200, 255,', alpha: 0.12 },
+            { amp: 24, freq: 0.012, speed: 0.8, phase: 1.2, color: 'rgba(100, 190, 255,', alpha: 0.10 },
+            { amp: 18, freq: 0.016, speed: 1.0, phase: 2.8, color: 'rgba(80, 180, 255,', alpha: 0.08 },
+            { amp: 14, freq: 0.020, speed: 0.9, phase: 4.1, color: 'rgba(160, 215, 255,', alpha: 0.06 },
+            { amp: 10, freq: 0.025, speed: 1.2, phase: 5.5, color: 'rgba(200, 235, 255,', alpha: 0.04 },
+        ];
+
+        function drawBackground() {
+            const grad = ctx.createLinearGradient(0, 0, 0, height);
+            grad.addColorStop(0, '#0a1a2e');
+            grad.addColorStop(0.4, '#0d2847');
+            grad.addColorStop(0.7, '#0f3460');
+            grad.addColorStop(1, '#0a2a3a');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        function drawWaves() {
+            time += 0.015;
+
+            for (let w = waves.length - 1; w >= 0; w--) {
+                const wave = waves[w];
+                const { amp, freq, speed, phase, color, alpha } = wave;
+
+                ctx.beginPath();
+                ctx.moveTo(0, height);
+
+                for (let x = 0; x <= width; x += 1.5) {
+                    const y =
+                        height * 0.5 +
+                        amp * Math.sin(freq * x + speed * time + phase) +
+                        amp * 0.5 * Math.sin(freq * 0.6 * x + speed * 0.7 * time + phase * 0.8) +
+                        amp * 0.3 * Math.sin(freq * 1.4 * x - speed * 0.5 * time + phase * 1.2);
+                    ctx.lineTo(x, y);
+                }
+
+                ctx.lineTo(width, height);
+                ctx.closePath();
+
+                const fillColor = color + alpha + ')';
+                ctx.fillStyle = fillColor;
+                ctx.fill();
+
+                ctx.beginPath();
+                for (let x = 0; x <= width; x += 1.5) {
+                    const y =
+                        height * 0.5 +
+                        amp * Math.sin(freq * x + speed * time + phase) +
+                        amp * 0.5 * Math.sin(freq * 0.6 * x + speed * 0.7 * time + phase * 0.8) +
+                        amp * 0.3 * Math.sin(freq * 1.4 * x - speed * 0.5 * time + phase * 1.2);
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = color + (alpha * 0.6) + ')';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+            }
+
+            const numDots = Math.floor(width * height / 12000);
+            for (let i = 0; i < numDots; i++) {
+                const x = (i * 137.5 + time * 20) % width;
+                const y = (i * 97.3 + time * 8 + Math.sin(i * 0.5 + time) * 20) % height;
+                const size = 0.8 + Math.sin(i * 2.7 + time * 1.2) * 0.6 + 0.6;
+                const bright = 0.15 + Math.sin(i * 1.8 + time * 0.9) * 0.10 + 0.10;
+                ctx.beginPath();
+                ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${bright * 0.4})`;
+                ctx.fill();
+            }
+        }
+
+        function animateBg() {
+            drawBackground();
+            drawWaves();
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        // ============================================================
+        //  2. 鼠标涟漪 (Canvas)
+        // ============================================================
+        const rippleCanvas = document.getElementById('rippleCanvas');
+        const rctx = rippleCanvas.getContext('2d');
+
+        let rippleW, rippleH;
+        let ripples = [];
+
+        function resizeRipple() {
+            rippleW = window.innerWidth;
+            rippleH = window.innerHeight;
+            rippleCanvas.width = rippleW;
+            rippleCanvas.height = rippleH;
+        }
+        window.addEventListener('resize', resizeRipple);
+        resizeRipple();
+
+        let mouseX = -9999,
+            mouseY = -9999;
+        let lastRippleTime = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            const now = Date.now();
+            if (now - lastRippleTime > 60) {
+                lastRippleTime = now;
+                ripples.push({
+                    x: mouseX,
+                    y: mouseY,
+                    radius: 0,
+                    maxRadius: 120 + Math.random() * 80,
+                    alpha: 0.7,
+                    speed: 2.8 + Math.random() * 1.6,
+                    life: 1.0,
+                });
+                if (ripples.length > 40) ripples.shift();
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            if (touch) {
+                mouseX = touch.clientX;
+                mouseY = touch.clientY;
+                const now = Date.now();
+                if (now - lastRippleTime > 80) {
+                    lastRippleTime = now;
+                    ripples.push({
+                        x: mouseX,
+                        y: mouseY,
+                        radius: 0,
+                        maxRadius: 100 + Math.random() * 60,
+                        alpha: 0.6,
+                        speed: 2.2 + Math.random() * 1.2,
+                        life: 1.0,
+                    });
+                    if (ripples.length > 30) ripples.shift();
+                }
+            }
+        }, { passive: true });
+
+        function drawRipples() {
+            rctx.clearRect(0, 0, rippleW, rippleH);
+
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                r.radius += r.speed;
+                r.life -= 0.012;
+                r.alpha = r.life * 0.7;
+
+                if (r.life <= 0 || r.radius > r.maxRadius) {
+                    ripples.splice(i, 1);
+                    continue;
+                }
+
+                rctx.beginPath();
+                rctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                rctx.strokeStyle = `rgba(180, 225, 255, ${r.alpha * 0.5})`;
+                rctx.lineWidth = 2.0 * r.life + 0.5;
+                rctx.stroke();
+
+                rctx.beginPath();
+                rctx.arc(r.x, r.y, r.radius * 0.5, 0, Math.PI * 2);
+                rctx.fillStyle = `rgba(150, 215, 255, ${r.alpha * 0.08})`;
+                rctx.fill();
+
+                if (r.radius > 10) {
+                    const angle = r.radius * 0.3;
+                    const hx = r.x + Math.cos(angle) * r.radius * 0.6;
+                    const hy = r.y + Math.sin(angle) * r.radius * 0.6;
+                    rctx.beginPath();
+                    rctx.arc(hx, hy, 2.5 * r.life, 0, Math.PI * 2);
+                    rctx.fillStyle = `rgba(255, 255, 255, ${r.alpha * 0.2})`;
+                    rctx.fill();
+                }
+            }
+
+            requestAnimationFrame(drawRipples);
+        }
+        drawRipples();
+
+        // ============================================================
+        //  3. 浮动气泡 (DOM)
+        // ============================================================
+        const bubblesContainer = document.getElementById('bubblesContainer');
+
+        function createBubble() {
+            const size = 6 + Math.random() * 22;
+            const el = document.createElement('div');
+            el.className = 'bubble';
+            const left = Math.random() * 100;
+            const duration = 14 + Math.random() * 18;
+            const delay = Math.random() * 20;
+            el.style.width = size + 'px';
+            el.style.height = size + 'px';
+            el.style.left = left + '%';
+            el.style.animationDuration = duration + 's';
+            el.style.animationDelay = delay + 's';
+            el.style.opacity = 0.15 + Math.random() * 0.3;
+            bubblesContainer.appendChild(el);
+
+            setTimeout(() => {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            }, (duration + delay) * 1000 + 2000);
+        }
+
+        for (let i = 0; i < 18; i++) {
+            setTimeout(createBubble, i * 300);
+        }
+
+        setInterval(() => {
+            createBubble();
+        }, 2000);
+
+        // ============================================================
+        //  4. 窗口 resize 统一处理
+        // ============================================================
+        window.addEventListener('resize', () => {
+            resizeBg();
+            resizeRipple();
+        });
+
+        console.log('💧 守护生命之源 · 保护淡水资源');
+        console.log('🌊 每一滴水都值得被珍惜');
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>精密水龙头 · 绝对相等</title>
+    <style>
+        /* ===== 全局重置 & 字体 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(ellipse at 50% 30%, #0b1a2e, #040a12);
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, system-ui, sans-serif;
+            padding: 20px;
+        }
+
+        /* ===== 主卡片 ===== */
+        .game-container {
+            width: 100%;
+            max-width: 720px;
+            background: rgba(10, 25, 45, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 48px 48px 32px 32px;
+            padding: 32px 30px 38px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(120, 200, 255, 0.1);
+            border: 1px solid rgba(80, 180, 255, 0.12);
+            transition: border-color 0.3s;
+        }
+        .game-container.win {
+            border-color: rgba(0, 255, 200, 0.5);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 255, 200, 0.08);
+        }
+
+        /* ===== 标题行 ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(80, 180, 255, 0.08);
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #b0daff;
+            text-shadow: 0 0 20px rgba(60, 180, 255, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header h1 span {
+            font-size: 26px;
+        }
+        .header .status-badge {
+            font-size: 13px;
+            font-weight: 500;
+            padding: 5px 16px;
+            border-radius: 40px;
+            background: rgba(60, 180, 255, 0.12);
+            color: #8ac4ff;
+            border: 1px solid rgba(60, 180, 255, 0.15);
+            transition: all 0.4s;
+            white-space: nowrap;
+        }
+        .header .status-badge.success {
+            background: rgba(0, 255, 200, 0.15);
+            color: #7fffd4;
+            border-color: rgba(0, 255, 200, 0.3);
+            box-shadow: 0 0 24px rgba(0, 255, 200, 0.08);
+        }
+
+        /* ===== 温度显示 ===== */
+        .temp-display {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 22px;
+            padding: 16px 20px 18px;
+            background: rgba(0, 10, 25, 0.5);
+            border-radius: 28px;
+            border: 1px solid rgba(80, 180, 255, 0.06);
+        }
+        .temp-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+        }
+        .temp-label {
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(160, 200, 240, 0.6);
+            letter-spacing: 0.5px;
+        }
+        .temp-value {
+            font-size: 28px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+            color: #c8e6ff;
+            transition: color 0.25s;
+        }
+        .temp-value .unit {
+            font-size: 18px;
+            font-weight: 400;
+            color: rgba(160, 200, 240, 0.5);
+            margin-left: 4px;
+        }
+        .temp-value .highlight-coeff {
+            color: #7fc9ff;
+        }
+        .temp-value .highlight-exp {
+            color: #ffb07c;
+        }
+        .temp-value .offset-info {
+            font-size: 14px;
+            font-weight: 400;
+            color: rgba(255, 200, 140, 0.5);
+            margin-left: 6px;
+        }
+
+        .target-row .temp-value {
+            font-size: 22px;
+            color: #ffd9a8;
+        }
+        .target-row .temp-value .highlight-coeff {
+            color: #ffc08a;
+        }
+        .target-row .temp-value .highlight-exp {
+            color: #ffa56a;
+        }
+        .target-label {
+            color: rgba(255, 200, 140, 0.7);
+        }
+
+        .diff-row {
+            margin-top: 4px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(80, 180, 255, 0.06);
+        }
+        .diff-row .temp-value {
+            font-size: 18px;
+            font-weight: 400;
+        }
+        .diff-row .temp-value .diff-positive {
+            color: #ff7b7b;
+        }
+        .diff-row .temp-value .diff-negative {
+            color: #7bb8ff;
+        }
+        .diff-row .temp-value .diff-perfect {
+            color: #7fffd4;
+        }
+
+        /* ===== 温度计 ===== */
+        .thermometer {
+            position: relative;
+            height: 8px;
+            background: rgba(30, 70, 120, 0.3);
+            border-radius: 20px;
+            margin: 14px 0 18px;
+            overflow: visible;
+            border: 1px solid rgba(80, 180, 255, 0.06);
+        }
+        .thermometer .fill {
+            height: 100%;
+            border-radius: 20px;
+            width: 0%;
+            background: linear-gradient(90deg, #1a6bff, #3ac0ff, #ffb347, #ff6b35);
+            transition: width 0.08s ease-out;
+            box-shadow: 0 0 20px rgba(60, 180, 255, 0.15);
+        }
+        .thermometer .target-marker {
+            position: absolute;
+            top: -6px;
+            width: 3px;
+            height: 20px;
+            background: #ffc857;
+            border-radius: 4px;
+            box-shadow: 0 0 16px rgba(255, 200, 80, 0.4);
+            transition: left 0.15s ease;
+        }
+        .thermometer .target-marker::after {
+            content: '▼';
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #ffc857;
+            text-shadow: 0 0 12px rgba(255, 200, 80, 0.3);
+        }
+        .thermometer .current-marker {
+            position: absolute;
+            top: -4px;
+            width: 3px;
+            height: 16px;
+            background: #ffffff;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            transition: left 0.08s ease-out;
+        }
+        .thermometer .zone-indicator {
+            position: absolute;
+            top: -6px;
+            height: 20px;
+            background: rgba(0, 255, 200, 0.12);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            border-radius: 6px;
+            transition: left 0.2s ease, width 0.2s ease;
+            pointer-events: none;
+        }
+
+        /* ===== 控制区 ===== */
+        .controls {
+            margin-top: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .control-group .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .control-group .control-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(160, 200, 240, 0.7);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .control-group .control-label .icon {
+            font-size: 18px;
+        }
+        .control-group .control-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #b8daff;
+            font-variant-numeric: tabular-nums;
+            min-width: 54px;
+            text-align: right;
+        }
+        .control-group .control-value .sub {
+            font-size: 12px;
+            font-weight: 400;
+            color: rgba(160, 200, 240, 0.4);
+        }
+
+        /* 自定义滑块 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 12px;
+            background: rgba(30, 70, 130, 0.35);
+            outline: none;
+            transition: background 0.2s;
+            border: 1px solid rgba(80, 180, 255, 0.06);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #7fc9ff, #2a7bcb);
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(60, 180, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(180, 220, 255, 0.5);
+            transition: 0.12s;
+            margin-top: -8px;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            border-color: #8ad0ff;
+            box-shadow: 0 0 32px rgba(60, 180, 255, 0.35);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #7fc9ff, #2a7bcb);
+            cursor: pointer;
+            border: 2px solid rgba(180, 220, 255, 0.5);
+            box-shadow: 0 0 20px rgba(60, 180, 255, 0.2);
+        }
+        input[type="range"]:disabled::-webkit-slider-thumb {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: scale(0.95);
+        }
+        input[type="range"]:disabled::-moz-range-thumb {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .fine-control input[type="range"] {
+            background: rgba(30, 70, 130, 0.2);
+            height: 5px;
+        }
+        .fine-control input[type="range"]::-webkit-slider-thumb {
+            width: 18px;
+            height: 18px;
+            background: radial-gradient(circle at 35% 30%, #ffc08a, #d4833a);
+            border-color: rgba(255, 200, 140, 0.5);
+            box-shadow: 0 0 20px rgba(255, 180, 80, 0.2), inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .fine-control input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: radial-gradient(circle at 35% 30%, #ffc08a, #d4833a);
+            border-color: rgba(255, 200, 140, 0.5);
+            box-shadow: 0 0 20px rgba(255, 180, 80, 0.2);
+        }
+
+        .micro-control input[type="range"] {
+            background: rgba(30, 70, 130, 0.15);
+            height: 4px;
+        }
+        .micro-control input[type="range"]::-webkit-slider-thumb {
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 35% 30%, #b5d0ff, #6c8fd4);
+            border-color: rgba(180, 210, 255, 0.5);
+            box-shadow: 0 0 16px rgba(100, 180, 255, 0.2), inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .micro-control input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 35% 30%, #b5d0ff, #6c8fd4);
+            border-color: rgba(180, 210, 255, 0.5);
+            box-shadow: 0 0 16px rgba(100, 180, 255, 0.2);
+        }
+        .micro-control .spiral-decoration {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+            margin-top: 2px;
+            opacity: 0.2;
+        }
+        .micro-control .spiral-decoration span {
+            display: inline-block;
+            width: 3px;
+            height: 3px;
+            background: #8ab8ff;
+            border-radius: 50%;
+            opacity: 0.5;
+        }
+        .micro-control .spiral-decoration span:nth-child(odd) {
+            opacity: 0.2;
+            transform: scale(0.6);
+        }
+
+        /* ===== 底部信息 ===== */
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 28px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(80, 180, 255, 0.06);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: rgba(160, 200, 240, 0.5);
+        }
+        .stats .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .stats .stat-item .num {
+            color: #b0daff;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            min-width: 28px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 22px;
+            border-radius: 40px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(60, 180, 255, 0.08);
+            color: #8ac4ff;
+            border: 1px solid rgba(60, 180, 255, 0.12);
+        }
+        .btn:hover {
+            background: rgba(60, 180, 255, 0.18);
+            border-color: rgba(60, 180, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .btn-primary {
+            background: linear-gradient(145deg, rgba(60, 180, 255, 0.2), rgba(30, 100, 200, 0.15));
+            border-color: rgba(60, 180, 255, 0.2);
+            color: #b0daff;
+            padding: 8px 28px;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(145deg, rgba(60, 180, 255, 0.3), rgba(30, 100, 200, 0.2));
+            border-color: rgba(60, 180, 255, 0.35);
+            box-shadow: 0 0 30px rgba(60, 180, 255, 0.05);
+        }
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+        .btn-success {
+            background: rgba(0, 255, 200, 0.12);
+            border-color: rgba(0, 255, 200, 0.2);
+            color: #7fffd4;
+        }
+        .btn-success:hover {
+            background: rgba(0, 255, 200, 0.2);
+            border-color: rgba(0, 255, 200, 0.3);
+        }
+
+        /* ===== 胜利弹窗 ===== */
+        .win-overlay {
+            display: none;
+            margin-top: 16px;
+            padding: 14px 20px;
+            border-radius: 24px;
+            background: rgba(0, 255, 200, 0.06);
+            border: 1px solid rgba(0, 255, 200, 0.15);
+            text-align: center;
+            animation: winPulse 1.8s ease-in-out infinite;
+        }
+        .win-overlay.show {
+            display: block;
+        }
+        .win-overlay .win-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: #7fffd4;
+            letter-spacing: 1px;
+        }
+        .win-overlay .win-text span {
+            display: inline-block;
+            animation: winEmoji 1.2s ease-in-out infinite alternate;
+        }
+        .win-overlay .win-sub {
+            font-size: 14px;
+            color: rgba(160, 200, 240, 0.6);
+            margin-top: 4px;
+        }
+
+        @keyframes winPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(0, 255, 200, 0.02);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(0, 255, 200, 0.08);
+            }
+        }
+        @keyframes winEmoji {
+            0% {
+                transform: scale(1) rotate(0deg);
+            }
+            100% {
+                transform: scale(1.2) rotate(6deg);
+            }
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 520px) {
+            .game-container {
+                padding: 22px 16px 28px;
+                border-radius: 32px 32px 24px 24px;
+            }
+            .header h1 {
+                font-size: 18px;
+            }
+            .header .status-badge {
+                font-size: 11px;
+                padding: 4px 12px;
+            }
+            .temp-value {
+                font-size: 22px;
+            }
+            .target-row .temp-value {
+                font-size: 18px;
+            }
+            .controls {
+                gap: 22px;
+            }
+            .footer {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 14px;
+            }
+            .stats {
+                justify-content: center;
+            }
+            .btn-group {
+                justify-content: center;
+            }
+            .btn {
+                padding: 6px 18px;
+                font-size: 13px;
+            }
+            .temp-display {
+                padding: 12px 14px 14px;
+            }
+            .control-group .control-label {
+                font-size: 13px;
+            }
+            input[type="range"]::-webkit-slider-thumb {
+                width: 20px;
+                height: 20px;
+                margin-top: -7px;
+            }
+            .fine-control input[type="range"]::-webkit-slider-thumb,
+            .micro-control input[type="range"]::-webkit-slider-thumb {
+                width: 16px;
+                height: 16px;
+            }
+        }
+        @media (max-width: 380px) {
+            .temp-value {
+                font-size: 18px;
+            }
+            .target-row .temp-value {
+                font-size: 16px;
+            }
+            .header h1 {
+                font-size: 15px;
+            }
+            .game-container {
+                padding: 16px 12px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="app">
+        <!-- 标题 -->
+        <div class="header">
+            <h1><span>🚰</span> 精密水龙头 <span style="font-size:14px;font-weight:400;color:rgba(160,200,240,0.3);">绝对相等</span></h1>
+            <div class="status-badge" id="statusBadge">⚙️ 调节中</div>
+        </div>
+
+        <!-- 温度显示 -->
+        <div class="temp-display">
+            <div class="temp-row target-row">
+                <span class="temp-label target-label">🎯 目标温度</span>
+                <span class="temp-value" id="targetDisplay">
+                    <span class="highlight-coeff">—</span> × 10<sup><span class="highlight-exp">—</span></sup>
+                    <span class="unit">K</span>
+                </span>
+            </div>
+            <div class="temp-row">
+                <span class="temp-label">🌡️ 当前温度</span>
+                <span class="temp-value" id="currentDisplay">
+                    <span class="highlight-coeff">1.000</span> × 10<sup><span class="highlight-exp">0</span></sup>
+                    <span class="unit">K</span>
+                    <span class="offset-info" id="offsetInfo"></span>
+                </span>
+            </div>
+            <div class="temp-row diff-row">
+                <span class="temp-label">📊 状态</span>
+                <span class="temp-value" id="diffDisplay">
+                    <span class="diff-positive">未匹配</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- 温度计 -->
+        <div class="thermometer" id="thermometer">
+            <div class="zone-indicator" id="zoneIndicator"></div>
+            <div class="fill" id="tempFill"></div>
+            <div class="target-marker" id="targetMarker"></div>
+            <div class="current-marker" id="currentMarker"></div>
+        </div>
+
+        <!-- 控制区 -->
+        <div class="controls">
+            <!-- 主旋钮 -->
+            <div class="control-group">
+                <div class="control-header">
+                    <span class="control-label">
+                        <span class="icon">🔘</span> 主旋钮 · 粗调
+                        <span style="font-weight:400;font-size:12px;color:rgba(160,200,240,0.35);">(数量级)</span>
+                    </span>
+                    <span class="control-value" id="expDisplay">指数 <span class="sub">10</span><sup id="expValue">0</sup></span>
+                </div>
+                <input type="range" id="expSlider" min="-5" max="32" value="0" step="1" />
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(160,200,240,0.2);padding:0 2px;">
+                    <span>10⁻⁵</span>
+                    <span>10³²</span>
+                </div>
+            </div>
+
+            <!-- 微调螺旋 -->
+            <div class="control-group fine-control">
+                <div class="control-header">
+                    <span class="control-label">
+                        <span class="icon">🌀</span> 微调螺旋 · 系数
+                        <span style="font-weight:400;font-size:12px;color:rgba(160,200,240,0.35);">(1.000~9.999)</span>
+                    </span>
+                    <span class="control-value" id="coeffDisplay">基础 <span id="coeffValue">1.000</span></span>
+                </div>
+                <input type="range" id="fineSlider" min="1000" max="9999" value="1000" step="1" />
+                <div class="spiral-decoration">
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+            </div>
+
+            <!-- 微焦旋钮 -->
+            <div class="control-group micro-control">
+                <div class="control-header">
+                    <span class="control-label">
+                        <span class="icon">🔬</span> 微焦旋钮 · 偏移
+                        <span style="font-weight:400;font-size:12px;color:rgba(160,200,240,0.35);">(±0.001 ~ ±0.030)</span>
+                    </span>
+                    <span class="control-value" id="microDisplay">偏移 <span id="microValue">+0.000</span></span>
+                </div>
+                <input type="range" id="microSlider" min="-30" max="30" value="0" step="1" />
+                <div class="spiral-decoration">
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 胜利提示 -->
+        <div class="win-overlay" id="winOverlay">
+            <div class="win-text"><span>🎉</span> 完美匹配！</div>
+            <div class="win-sub" id="winSub">指数与系数完全一致</div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="footer">
+            <div class="stats">
+                <span class="stat-item">🔄 调节 <span class="num" id="attempts">0</span></span>
+                <span class="stat-item">⏱️ <span class="num" id="timerDisplay">0s</span></span>
+                <span class="stat-item">🎯 精度 <span class="num" style="color:#7fffd4;">绝对相等</span></span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="newTargetBtn">🎲 新目标</button>
+                <button class="btn" id="resetBtn">↺ 重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            //  常量 & 配置
+            // ============================================================
+            const EXP_MIN = -5;
+            const EXP_MAX = 32;
+            const COEFF_INT_MIN = 1000; // 对应 1.000
+            const COEFF_INT_MAX = 9999; // 对应 9.999
+            const MICRO_STEPS = 60; // -30 ~ +30
+
+            // ============================================================
+            //  DOM 引用
+            // ============================================================
+            const expSlider = document.getElementById('expSlider');
+            const fineSlider = document.getElementById('fineSlider');
+            const microSlider = document.getElementById('microSlider');
+            const expValue = document.getElementById('expValue');
+            const coeffValue = document.getElementById('coeffValue');
+            const microValue = document.getElementById('microValue');
+            const currentDisplay = document.getElementById('currentDisplay');
+            const targetDisplay = document.getElementById('targetDisplay');
+            const diffDisplay = document.getElementById('diffDisplay');
+            const offsetInfo = document.getElementById('offsetInfo');
+            const tempFill = document.getElementById('tempFill');
+            const targetMarker = document.getElementById('targetMarker');
+            const currentMarker = document.getElementById('currentMarker');
+            const zoneIndicator = document.getElementById('zoneIndicator');
+            const statusBadge = document.getElementById('statusBadge');
+            const winOverlay = document.getElementById('winOverlay');
+            const winSub = document.getElementById('winSub');
+            const attemptsSpan = document.getElementById('attempts');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const newTargetBtn = document.getElementById('newTargetBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const container = document.getElementById('app');
+
+            // ============================================================
+            //  游戏状态 (全部使用整数)
+            // ============================================================
+            let state = {
+                // 目标
+                targetExp: 0,
+                targetCoeffInt: 1000, // 系数 × 1000
+                // 当前
+                currentExp: 0,
+                baseCoeffInt: 1000, // 基础系数 (来自微调螺旋)
+                microOffsetInt: 0, // 微焦偏移量 (单位: 0.001)
+                currentCoeffInt: 1000, // 最终系数 = clamp(base + offset)
+                // 游戏状态
+                won: false,
+                attempts: 0,
+                timer: 0,
+                timerInterval: null,
+                started: false,
+            };
+
+            // ============================================================
+            //  工具函数
+            // ============================================================
+            function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+
+            function log10(x) { return Math.log10(x); }
+
+            function pow10(x) { return Math.pow(10, x); }
+
+            // 从系数整数 + 指数 计算 log10 值 (用于温度计)
+            function coeffIntExpToLog(coeffInt, exp) {
+                const coeff = coeffInt / 1000;
+                return log10(coeff) + exp;
+            }
+
+            // 格式化科学计数法显示
+            function formatScientific(coeffInt, exp) {
+                const coeff = coeffInt / 1000;
+                const cStr = coeff.toFixed(3);
+                return `${cStr} × 10<sup>${exp}</sup> <span class="unit">K</span>`;
+            }
+
+            // ============================================================
+            //  核心更新函数
+            // ============================================================
+            function updateFromSliders() {
+                if (state.won) return;
+
+                const exp = parseInt(expSlider.value, 10);
+                const baseInt = parseInt(fineSlider.value, 10); // 1000~9999
+                const microOff = parseInt(microSlider.value, 10); // -30~30
+
+                state.currentExp = exp;
+                state.baseCoeffInt = baseInt;
+                state.microOffsetInt = microOff;
+
+                // 计算最终系数
+                let finalInt = baseInt + microOff;
+                finalInt = clamp(finalInt, COEFF_INT_MIN, COEFF_INT_MAX);
+                state.currentCoeffInt = finalInt;
+
+                // 检查胜利条件：指数和系数整数都必须完全相等
+                const won = (state.currentExp === state.targetExp) &&
+                            (state.currentCoeffInt === state.targetCoeffInt);
+
+                if (won) {
+                    winGame();
+                }
+
+                updateUI();
+            }
+
+            function updateUI() {
+                // 指数显示
+                expValue.textContent = state.currentExp;
+
+                // 基础系数显示 (三位小数)
+                coeffValue.textContent = (state.baseCoeffInt / 1000).toFixed(3);
+
+                // 微焦偏移显示
+                const offset = state.microOffsetInt / 1000;
+                const sign = offset >= 0 ? '+' : '';
+                microValue.textContent = `${sign}${offset.toFixed(3)}`;
+
+                // 当前温度 (使用最终系数)
+                const curCoeffInt = state.currentCoeffInt;
+                const curExp = state.currentExp;
+                currentDisplay.innerHTML = formatScientific(curCoeffInt, curExp);
+
+                // 偏移信息
+                if (Math.abs(state.microOffsetInt) > 0) {
+                    const offSign = state.microOffsetInt > 0 ? '+' : '';
+                    offsetInfo.textContent = `(偏移 ${offSign}${(state.microOffsetInt/1000).toFixed(3)})`;
+                    offsetInfo.style.display = 'inline';
+                } else {
+                    offsetInfo.style.display = 'none';
+                }
+
+                // 目标温度
+                targetDisplay.innerHTML = formatScientific(state.targetCoeffInt, state.targetExp);
+
+                // 状态显示
+                const isMatch = (state.currentExp === state.targetExp) &&
+                                (state.currentCoeffInt === state.targetCoeffInt);
+                if (isMatch) {
+                    diffDisplay.innerHTML = '<span class="diff-perfect">✓ 完全相等！</span>';
+                } else {
+                    let msg = '';
+                    if (state.currentExp !== state.targetExp) {
+                        const diffExp = state.currentExp - state.targetExp;
+                        const sign = diffExp > 0 ? '+' : '';
+                        msg += `指数 ${sign}${diffExp} `;
+                    }
+                    if (state.currentCoeffInt !== state.targetCoeffInt) {
+                        const diffCoeff = (state.currentCoeffInt - state.targetCoeffInt) / 1000;
+                        const sign = diffCoeff > 0 ? '+' : '';
+                        msg += `系数 ${sign}${diffCoeff.toFixed(3)}`;
+                    }
+                    if (msg === '') msg = '未匹配';
+                    diffDisplay.innerHTML = `<span class="diff-negative">${msg}</span>`;
+                }
+
+                // 温度计
+                const curLog = coeffIntExpToLog(state.currentCoeffInt, state.currentExp);
+                const tarLog = coeffIntExpToLog(state.targetCoeffInt, state.targetExp);
+
+                const logMin = EXP_MIN - 0.5; // 留边
+                const logMax = EXP_MAX + 0.5;
+                const logRange = logMax - logMin;
+
+                const fillPercent = (curLog - logMin) / logRange * 100;
+                const targetPercent = (tarLog - logMin) / logRange * 100;
+
+                // 由于“必须相等”，所以目标区间为一个点，但为了视觉，我们画一条细线
+                const markerWidth = 2; // 像素，稍后调整
+                tempFill.style.width = clamp(fillPercent, 0, 100) + '%';
+                targetMarker.style.left = clamp(targetPercent, 0, 100) + '%';
+                currentMarker.style.left = clamp(fillPercent, 0, 100) + '%';
+
+                // 区域指示：因为必须相等，所以宽度为0，但为了可见，显示一条极细线
+                const halfZone = 0.05 / logRange * 100; // 约0.05 log宽度，视觉提示
+                const zoneLeft = clamp(targetPercent - halfZone/2, 0, 100);
+                const zoneRight = clamp(targetPercent + halfZone/2, 0, 100);
+                const zoneWidth = zoneRight - zoneLeft;
+                zoneIndicator.style.left = zoneLeft + '%';
+                zoneIndicator.style.width = zoneWidth + '%';
+
+                // 状态徽章
+                if (state.won) {
+                    statusBadge.textContent = '✅ 完美!';
+                    statusBadge.className = 'status-badge success';
+                } else {
+                    if (state.currentExp === state.targetExp && state.currentCoeffInt === state.targetCoeffInt) {
+                        // 理论上已经胜利，但以防万一
+                        statusBadge.textContent = '🎯 完全相等!';
+                        statusBadge.className = 'status-badge success';
+                    } else {
+                        // 判断冷热
+                        const curLogVal = coeffIntExpToLog(state.currentCoeffInt, state.currentExp);
+                        const tarLogVal = coeffIntExpToLog(state.targetCoeffInt, state.targetExp);
+                        const diff = curLogVal - tarLogVal;
+                        if (Math.abs(diff) < 0.001) {
+                            statusBadge.textContent = '🎯 接近中';
+                            statusBadge.className = 'status-badge';
+                            statusBadge.style.color = '#7fffd4';
+                            statusBadge.style.borderColor = 'rgba(0,255,200,0.2)';
+                        } else if (diff > 0) {
+                            statusBadge.textContent = '🔥 太热';
+                            statusBadge.className = 'status-badge';
+                            statusBadge.style.color = '#ff7b7b';
+                            statusBadge.style.borderColor = 'rgba(255,100,100,0.15)';
+                        } else {
+                            statusBadge.textContent = '❄️ 太冷';
+                            statusBadge.className = 'status-badge';
+                            statusBadge.style.color = '#7bb8ff';
+                            statusBadge.style.borderColor = 'rgba(100,180,255,0.15)';
+                        }
+                    }
+                }
+
+                attemptsSpan.textContent = state.attempts;
+            }
+
+            // ============================================================
+            //  游戏胜利
+            // ============================================================
+            function winGame() {
+                if (state.won) return;
+                state.won = true;
+                stopTimer();
+
+                winOverlay.classList.add('show');
+                container.classList.add('win');
+                statusBadge.textContent = '✅ 完美!';
+                statusBadge.className = 'status-badge success';
+
+                winSub.textContent = `调节 ${state.attempts} 次 · 用时 ${state.timer}s · 指数和系数完全匹配`;
+
+                expSlider.disabled = true;
+                fineSlider.disabled = true;
+                microSlider.disabled = true;
+            }
+
+            // ============================================================
+            //  计时器
+            // ============================================================
+            function startTimer() {
+                if (state.started) return;
+                state.started = true;
+                state.timer = 0;
+                state.timerInterval = setInterval(() => {
+                    state.timer += 1;
+                    timerDisplay.textContent = state.timer + 's';
+                }, 1000);
+            }
+
+            function stopTimer() {
+                if (state.timerInterval) {
+                    clearInterval(state.timerInterval);
+                    state.timerInterval = null;
+                }
+            }
+
+            function resetTimer() {
+                stopTimer();
+                state.started = false;
+                state.timer = 0;
+                timerDisplay.textContent = '0s';
+            }
+
+            // ============================================================
+            //  生成新目标 (随机整数)
+            // ============================================================
+            function generateTarget() {
+                // 随机指数
+                const exp = Math.floor(Math.random() * (EXP_MAX - EXP_MIN + 1)) + EXP_MIN;
+                // 随机系数整数
+                const coeffInt = Math.floor(Math.random() * (COEFF_INT_MAX - COEFF_INT_MIN + 1)) + COEFF_INT_MIN;
+
+                state.targetExp = exp;
+                state.targetCoeffInt = coeffInt;
+
+                // 重置胜利状态
+                state.won = false;
+                state.attempts = 0;
+                container.classList.remove('win');
+                winOverlay.classList.remove('show');
+                statusBadge.className = 'status-badge';
+                statusBadge.style.color = '';
+                statusBadge.style.borderColor = '';
+                statusBadge.textContent = '⚙️ 调节中';
+
+                expSlider.disabled = false;
+                fineSlider.disabled = false;
+                microSlider.disabled = false;
+
+                resetTimer();
+
+                // 设置当前温度为一个随机值 (远离目标)
+                let initExp = exp + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 6 + 1);
+                initExp = clamp(initExp, EXP_MIN, EXP_MAX);
+                let initCoeffInt = Math.floor(Math.random() * (COEFF_INT_MAX - COEFF_INT_MIN + 1)) + COEFF_INT_MIN;
+                // 确保不完全一致
+                if (initExp === exp && initCoeffInt === coeffInt) {
+                    initCoeffInt = (initCoeffInt + 1) % (COEFF_INT_MAX - COEFF_INT_MIN + 1) + COEFF_INT_MIN;
+                }
+                state.currentExp = initExp;
+                state.baseCoeffInt = initCoeffInt;
+                state.microOffsetInt = 0;
+                state.currentCoeffInt = initCoeffInt;
+
+                // 同步滑块
+                expSlider.value = initExp;
+                fineSlider.value = initCoeffInt;
+                microSlider.value = 0;
+
+                updateUI();
+                startTimer();
+            }
+
+            // ============================================================
+            //  重置 (保持目标不变，重置当前温度)
+            // ============================================================
+            function resetGame() {
+                if (state.won) {
+                    generateTarget();
+                    return;
+                }
+
+                // 随机重置当前温度
+                let initExp = state.targetExp + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 5 + 1);
+                initExp = clamp(initExp, EXP_MIN, EXP_MAX);
+                let initCoeffInt = Math.floor(Math.random() * (COEFF_INT_MAX - COEFF_INT_MIN + 1)) + COEFF_INT_MIN;
+                // 避免恰好相等
+                if (initExp === state.targetExp && initCoeffInt === state.targetCoeffInt) {
+                    initCoeffInt = (initCoeffInt + 1) % (COEFF_INT_MAX - COEFF_INT_MIN + 1) + COEFF_INT_MIN;
+                }
+                state.currentExp = initExp;
+                state.baseCoeffInt = initCoeffInt;
+                state.microOffsetInt = 0;
+                state.currentCoeffInt = initCoeffInt;
+                state.won = false;
+                state.attempts = 0;
+
+                expSlider.value = initExp;
+                fineSlider.value = initCoeffInt;
+                microSlider.value = 0;
+
+                container.classList.remove('win');
+                winOverlay.classList.remove('show');
+                statusBadge.className = 'status-badge';
+                statusBadge.style.color = '';
+                statusBadge.style.borderColor = '';
+                statusBadge.textContent = '⚙️ 调节中';
+                expSlider.disabled = false;
+                fineSlider.disabled = false;
+                microSlider.disabled = false;
+
+                resetTimer();
+                updateUI();
+                startTimer();
+            }
+
+            // ============================================================
+            //  事件绑定
+            // ============================================================
+            function onSliderInput() {
+                if (state.won) return;
+                if (!state.started) startTimer();
+                state.attempts += 1;
+                updateFromSliders();
+            }
+
+            expSlider.addEventListener('input', onSliderInput);
+            fineSlider.addEventListener('input', onSliderInput);
+            microSlider.addEventListener('input', onSliderInput);
+
+            newTargetBtn.addEventListener('click', generateTarget);
+            resetBtn.addEventListener('click', resetGame);
+
+            // 键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'r' || e.key === 'R') {
+                    resetGame();
+                    e.preventDefault();
+                }
+                if (e.key === 'n' || e.key === 'N') {
+                    generateTarget();
+                    e.preventDefault();
+                }
+            });
+
+            // ============================================================
+            //  初始化
+            // ============================================================
+            function init() {
+                // 生成第一个目标
+                const exp = Math.floor(Math.random() * (EXP_MAX - EXP_MIN + 1)) + EXP_MIN;
+                const coeffInt = Math.floor(Math.random() * (COEFF_INT_MAX - COEFF_INT_MIN + 1)) + COEFF_INT_MIN;
+                state.targetExp = exp;
+                state.targetCoeffInt = coeffInt;
+
+                // 随机初始
+                let initExp = exp + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 4 + 1);
+                initExp = clamp(initExp, EXP_MIN, EXP_MAX);
+                let initCoeffInt = Math.floor(Math.random() * (COEFF_INT_MAX - COEFF_INT_MIN + 1)) + COEFF_INT_MIN;
+                if (initExp === exp && initCoeffInt === coeffInt) {
+                    initCoeffInt = (initCoeffInt + 1) % (COEFF_INT_MAX - COEFF_INT_MIN + 1) + COEFF_INT_MIN;
+                }
+                state.currentExp = initExp;
+                state.baseCoeffInt = initCoeffInt;
+                state.microOffsetInt = 0;
+                state.currentCoeffInt = initCoeffInt;
+                state.won = false;
+                state.attempts = 0;
+                state.started = false;
+                state.timer = 0;
+
+                expSlider.value = initExp;
+                fineSlider.value = initCoeffInt;
+                microSlider.value = 0;
+
+                updateUI();
+                startTimer();
+            }
+
+            init();
+            console.log('🚰 精密水龙头 · 绝对相等模式已加载！');
+            console.log('快捷键: [R] 重置  [N] 新目标');
+        })();
+    </script>
+
+</body>
+</html>

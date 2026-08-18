@@ -91,14 +91,41 @@
     overflow: hidden;
     z-index: 1;
 }
+.ftx_5{
+    background-color: cornflowerblue;
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px cornflowerblue;
+    background: cornflowerblue;
+    border: 2px solid #55f;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
 .end1,.end3,.end2,.end4{
     background-color: #5c5c5c;
     transform: translateY(-8px);
     box-shadow: 0 10px 20px #4a4a4a;
     border-radius: 10px;
 }
+.end5{
+    background-color: cornflowerblue;
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px cornflowerblue;
+    border-radius: 10px;
+    color: #fff;
+}
 .ext_labe{
     color:white;
     background-color: #5c5c5c;
 }
-
+.loved{
+    padding: 9%;
+    margin: 1%;
+    background-color: royalblue;
+    color: #fff;
+    border-radius: 10px;
+}

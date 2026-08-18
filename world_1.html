@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>保护海洋 · 不要让海里只有垃圾</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #0a1a2e;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ---- 文字叠加层 ---- */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        #message {
+            max-width: 780px;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(40px) scale(0.96);
+            transition: opacity 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            background: rgba(10, 30, 50, 0.65);
+            backdrop-filter: blur(16px) saturate(1.4);
+            -webkit-backdrop-filter: blur(16px) saturate(1.4);
+            border-radius: 32px;
+            padding: 2.8rem 3.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            text-align: center;
+            pointer-events: auto;
+        }
+
+        #message.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        #message h1 {
+            font-size: 2.6rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: #fff;
+            text-shadow: 0 4px 30px rgba(0, 20, 40, 0.6);
+            margin-bottom: 0.4rem;
+            line-height: 1.2;
+        }
+
+        #message h1 .highlight {
+            background: linear-gradient(135deg, #f6d365, #fda085);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        #message .subhead {
+            font-size: 1.05rem;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.75);
+            letter-spacing: 0.08em;
+            margin-top: 0.2rem;
+            margin-bottom: 1.6rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 1.4rem;
+        }
+
+        #message .body-text {
+            font-size: 1.05rem;
+            line-height: 1.9;
+            color: rgba(255, 255, 255, 0.88);
+            font-weight: 300;
+            letter-spacing: 0.02em;
+            text-align: left;
+            margin-bottom: 1.2rem;
+        }
+
+        #message .body-text strong {
+            color: #f6d365;
+            font-weight: 600;
+        }
+
+        #message .cta {
+            display: inline-block;
+            margin-top: 0.8rem;
+            padding: 0.7rem 2.8rem;
+            border-radius: 60px;
+            background: linear-gradient(135deg, #f6d365, #fda085);
+            color: #0a1a2e;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.06em;
+            text-decoration: none;
+            transition: transform 0.25s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 30px rgba(253, 160, 133, 0.25);
+            pointer-events: auto;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+        }
+
+        #message .cta:hover {
+            transform: scale(1.04);
+            box-shadow: 0 12px 40px rgba(253, 160, 133, 0.40);
+        }
+
+        #message .cta:active {
+            transform: scale(0.96);
+        }
+
+        /* ---- 右下角信息 ---- */
+        #credit {
+            position: fixed;
+            bottom: 24px;
+            right: 28px;
+            z-index: 3;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 0.04em;
+            font-weight: 300;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            padding: 4px 14px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* ---- 响应式 ---- */
+        @media (max-width: 700px) {
+            #message {
+                padding: 2rem 1.6rem;
+                border-radius: 24px;
+                max-width: 94%;
+            }
+            #message h1 {
+                font-size: 1.8rem;
+            }
+            #message .body-text {
+                font-size: 0.95rem;
+                line-height: 1.7;
+            }
+            #message .subhead {
+                font-size: 0.9rem;
+            }
+            #message .cta {
+                font-size: 0.85rem;
+                padding: 0.6rem 2rem;
+            }
+            #credit {
+                bottom: 16px;
+                right: 16px;
+                font-size: 0.65rem;
+                padding: 2px 12px;
+            }
+        }
+
+        @media (max-width: 450px) {
+            #message h1 {
+                font-size: 1.4rem;
+            }
+            #message .body-text {
+                font-size: 0.85rem;
+            }
+            #message {
+                padding: 1.5rem 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas 动画容器 -->
+    <div id="canvas-container">
+        <canvas id="oceanCanvas"></canvas>
+    </div>
+
+    <!-- 文字叠加层 -->
+    <div id="overlay">
+        <div id="message">
+            <h1>不要让海里<br class="mobile-break" />只有 <span class="highlight">垃圾</span></h1>
+            <div class="subhead">🌊 守护蔚蓝 · 刻不容缓</div>
+            <div class="body-text">
+                <strong>海洋</strong>，覆盖了地球表面的 71%，是无数生命的家园。<br />
+                然而每年有 <strong>超过 800 万吨</strong> 的塑料垃圾进入海洋，
+                需要数百年才能降解，它们伤害着海洋生物，破坏着生态平衡。<br /><br />
+                今天，我们看到的这片海洋，已经被垃圾所充斥。<br />
+                但 <strong>明天</strong>，我们可以改变。<br />
+                减少使用一次性塑料，妥善处理废弃物，选择可持续的生活方式。<br /><br />
+                每一个小小的行动，都能为海洋带来希望。<br />
+                <strong style="color:#fda085;">不要让海洋里只有垃圾，让我们一起，守护这片蔚蓝。</strong>
+            </div>
+            <button class="cta" id="actionBtn">加入守护 · 从我开始</button>
+        </div>
+    </div>
+
+    <div id="credit">🌱 公益 · 为海洋发声</div>
+
+    <script>
+        // ============================================================
+        //  主程序：海洋 + 垃圾动画 + 镜头拉远
+        //  修改：垃圾只分布在画面下半部分（中心线以下）
+        // ============================================================
+
+        (function() {
+            const canvas = document.getElementById('oceanCanvas');
+            const ctx = canvas.getContext('2d');
+            const overlay = document.getElementById('message');
+
+            // ---- 尺寸 ----
+            let W, H;
+
+            function resize() {
+                W = canvas.width = window.innerWidth;
+                H = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // ---- 时间线控制 ----
+            const T = {
+                START: 0,
+                DROP: 0.8, // 垃圾开始下落
+                SPLASH: 1.6, // 溅起水花
+                ZOOM_START: 2.0, // 镜头开始拉远
+                ZOOM_END: 4.8, // 镜头拉远结束
+                TEXT_START: 4.4, // 文字开始浮现
+                TEXT_END: 6.6, // 文字完全显示
+                END: 8.0, // 动画结束，保持
+            };
+
+            // ---- 状态 ----
+            let elapsed = 0;
+            let animationId = null;
+            let isFinished = false;
+
+            // ---- 垃圾数据 ----
+            const TRASH_TYPES = [
+                'bottle', 'bag', 'can', 'net', 'foam', 'cup', 'straw', 'packet'
+            ];
+
+            // 颜色方案
+            const COLORS = {
+                bottle: ['#4a9eff', '#2d7dd2', '#6ab0ff'],
+                bag: ['#c8d8e8', '#dce8f0', '#b0c8d8'],
+                can: ['#d0d8e0', '#b8c0c8', '#e8eef0'],
+                net: ['#8a9a8a', '#6a7a6a', '#aabaaa'],
+                foam: ['#f0f0f0', '#e0e0e0', '#fafafa'],
+                cup: ['#f5e6d0', '#e8d5b8', '#faf0e0'],
+                straw: ['#ff6b6b', '#ee5a5a', '#ff8a8a'],
+                packet: ['#ffb347', '#f09a2a', '#ffcc77'],
+            };
+
+            // 所有垃圾对象
+            let trashItems = [];
+            const TOTAL_TRASH = 120;
+
+            // ---- 工具函数 ----
+            function rand(min, max) { return Math.random() * (max - min) + min; }
+
+            function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+
+            function lerp(a, b, t) { return a + (b - a) * t; }
+
+            function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+            // ---- 生成垃圾（仅分布在下半部分） ----
+            function createTrashItem(radius, angle, type) {
+                // 强制角度在下半圆 (0 ~ PI) 以保证 y >= 0
+                const a = angle !== undefined ? angle : rand(0, Math.PI);
+                const r = radius || rand(40, 900);
+                const x = Math.cos(a) * r;
+                const y = Math.sin(a) * r * 0.6 + 20; // 加偏移确保在中心线以下
+
+                const typeKey = type || TRASH_TYPES[randInt(0, TRASH_TYPES.length - 1)];
+                const size = rand(12, 34);
+                const rot = rand(0, Math.PI * 2);
+                const floatSpeed = rand(0.2, 0.6);
+                const floatAmp = rand(2, 8);
+                const phase = rand(0, Math.PI * 2);
+
+                return {
+                    x,
+                    y,
+                    size,
+                    rot,
+                    type: typeKey,
+                    floatSpeed,
+                    floatAmp,
+                    phase,
+                    scale: rand(0.7, 1.3),
+                    opacity: 1,
+                    offsetX: 0,
+                    offsetY: 0,
+                };
+            }
+
+            // 生成所有垃圾 —— 只分布在下半部分（y > 0）
+            function generateTrash() {
+                trashItems = [];
+                // 中心区域少量（仍在下半部）
+                for (let i = 0; i < 8; i++) {
+                    const r = rand(20, 80);
+                    const a = rand(0, Math.PI); // 下半圆
+                    trashItems.push(createTrashItem(r, a));
+                }
+                // 中圈
+                for (let i = 0; i < 30; i++) {
+                    const r = rand(80, 350);
+                    const a = rand(0, Math.PI);
+                    trashItems.push(createTrashItem(r, a));
+                }
+                // 外圈
+                for (let i = 0; i < 50; i++) {
+                    const r = rand(350, 700);
+                    const a = rand(0, Math.PI);
+                    trashItems.push(createTrashItem(r, a));
+                }
+                // 最外层
+                for (let i = 0; i < 32; i++) {
+                    const r = rand(700, 1050);
+                    const a = rand(0, Math.PI);
+                    trashItems.push(createTrashItem(r, a));
+                }
+                // 打乱顺序
+                for (let i = trashItems.length - 1; i > 0; i--) {
+                    const j = randInt(0, i);
+                    [trashItems[i], trashItems[j]] = [trashItems[j], trashItems[i]];
+                }
+            }
+            generateTrash();
+
+            // ---- 绘制垃圾 ----
+            function drawTrash(ctx, item, time, zoom) {
+                const { x, y, size, rot, type, floatSpeed, floatAmp, phase, scale, opacity } = item;
+
+                // 浮动偏移
+                const floatY = Math.sin(time * floatSpeed + phase) * floatAmp;
+                const floatX = Math.cos(time * floatSpeed * 0.7 + phase * 1.3) * floatAmp * 0.3;
+
+                const cx = x + floatX;
+                const cy = y + floatY;
+
+                // 根据zoom决定是否绘制（距离中心越远，需要zoom越小才可见）
+                const dist = Math.sqrt(cx * cx + cy * cy);
+                const maxDist = 1100;
+                const visibleThreshold = 1.0 - (dist / maxDist) * 0.7;
+                const vis = clamp((zoom - 0.15) / 0.6, 0, 1) * opacity;
+                if (vis < 0.01) return;
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(rot + Math.sin(time * 0.3 + phase) * 0.05);
+                const s = size * scale * 0.018 * (0.8 + 0.4 * zoom);
+                ctx.scale(s, s);
+                ctx.globalAlpha = vis * 0.9;
+
+                const colors = COLORS[type] || COLORS.bottle;
+
+                switch (type) {
+                    case 'bottle':
+                        ctx.beginPath();
+                        ctx.rect(-14, -8, 28, 30);
+                        ctx.fillStyle = colors[0];
+                        ctx.fill();
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.rect(-6, -14, 12, 8);
+                        ctx.fillStyle = colors[2];
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.rect(-10, 0, 20, 10);
+                        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                        ctx.fill();
+                        break;
+
+                    case 'bag':
+                        ctx.beginPath();
+                        ctx.moveTo(-16, 10);
+                        ctx.quadraticCurveTo(-20, -4, -10, -14);
+                        ctx.quadraticCurveTo(0, -20, 10, -14);
+                        ctx.quadraticCurveTo(20, -4, 16, 10);
+                        ctx.closePath();
+                        ctx.fillStyle = colors[0];
+                        ctx.fill();
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.arc(-6, -16, 5, 0.2, Math.PI - 0.2);
+                        ctx.strokeStyle = colors[2];
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.arc(6, -16, 5, 0.2, Math.PI - 0.2);
+                        ctx.stroke();
+                        break;
+
+                    case 'can':
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, 14, 20, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = colors[0];
+                        ctx.fill();
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.ellipse(0, -16, 6, 3, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = colors[2];
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.ellipse(0, -16, 3, 5, 0, 0, Math.PI * 2);
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        break;
+
+                    case 'net':
+                        ctx.strokeStyle = colors[0];
+                        ctx.lineWidth = 1.2;
+                        for (let i = -16; i <= 16; i += 6) {
+                            ctx.beginPath();
+                            ctx.moveTo(i, -18);
+                            ctx.lineTo(i + rand(-2, 2), 18);
+                            ctx.stroke();
+                        }
+                        for (let j = -18; j <= 18; j += 6) {
+                            ctx.beginPath();
+                            ctx.moveTo(-16, j);
+                            ctx.lineTo(16, j + rand(-2, 2));
+                            ctx.stroke();
+                        }
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1.8;
+                        ctx.strokeRect(-16, -18, 32, 36);
+                        break;
+
+                    case 'foam':
+                        ctx.beginPath();
+                        const pts = 6;
+                        for (let i = 0; i < pts; i++) {
+                            const ang = (i / pts) * Math.PI * 2 + rot * 0.5;
+                            const r = 12 + Math.sin(i * 2.3 + time) * 4;
+                            const px = Math.cos(ang) * r;
+                            const py = Math.sin(ang) * r * 0.8;
+                            i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                        }
+                        ctx.closePath();
+                        ctx.fillStyle = colors[0];
+                        ctx.fill();
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        for (let k = 0; k < 3; k++) {
+                            ctx.beginPath();
+                            ctx.arc(rand(-6, 6), rand(-6, 6), rand(1, 3), 0, Math.PI * 2);
+                            ctx.fillStyle = 'rgba(200,200,200,0.4)';
+                            ctx.fill();
+                        }
+                        break;
+
+                    case 'cup':
+                        ctx.beginPath();
+                        ctx.moveTo(-16, 12);
+                        ctx.lineTo(-12, -14);
+                        ctx.lineTo(12, -14);
+                        ctx.lineTo(16, 12);
+                        ctx.closePath();
+                        ctx.fillStyle = colors[0];
+                        ctx.fill();
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.ellipse(0, -14, 14, 4, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = colors[2];
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(6, -20);
+                        ctx.lineTo(8, 16);
+                        ctx.strokeStyle = '#ff8a8a';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        break;
+
+                    case 'straw':
+                        ctx.beginPath();
+                        ctx.moveTo(-2, -18);
+                        ctx.lineTo(2, -18);
+                        ctx.lineTo(3, 18);
+                        ctx.lineTo(-3, 18);
+                        ctx.closePath();
+                        ctx.fillStyle = colors[0];
+                        ctx.fill();
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        for (let k = -12; k < 14; k += 6) {
+                            ctx.beginPath();
+                            ctx.rect(-4, k, 8, 2);
+                            ctx.fillStyle = 'rgba(255,255,255,0.25)';
+                            ctx.fill();
+                        }
+                        break;
+
+                    case 'packet':
+                        ctx.beginPath();
+                        ctx.moveTo(-16, 12);
+                        ctx.quadraticCurveTo(-20, 0, -14, -12);
+                        ctx.quadraticCurveTo(0, -18, 14, -12);
+                        ctx.quadraticCurveTo(20, 0, 16, 12);
+                        ctx.closePath();
+                        ctx.fillStyle = colors[0];
+                        ctx.fill();
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.rect(-10, -14, 20, 4);
+                        ctx.fillStyle = colors[2];
+                        ctx.fill();
+                        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                        ctx.font = '6px sans-serif';
+                        ctx.fillText('♻', -4, 2);
+                        break;
+
+                    default:
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+                        ctx.fillStyle = colors[0];
+                        ctx.fill();
+                        ctx.strokeStyle = colors[1];
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            // ---- 绘制海洋 ----
+            function drawOcean(ctx, time, zoom) {
+                const w = W;
+                const h = H;
+
+                // 天空渐变（上方）
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.5);
+                skyGrad.addColorStop(0, '#0b1d2f');
+                skyGrad.addColorStop(0.5, '#1a3a5a');
+                skyGrad.addColorStop(1, '#2a5f7a');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, w, h * 0.55);
+
+                // 海洋主体
+                const seaGrad = ctx.createLinearGradient(0, h * 0.35, 0, h);
+                seaGrad.addColorStop(0, '#1a5a7a');
+                seaGrad.addColorStop(0.3, '#0d4a6a');
+                seaGrad.addColorStop(0.7, '#083a5a');
+                seaGrad.addColorStop(1, '#062a3a');
+                ctx.fillStyle = seaGrad;
+                ctx.fillRect(0, h * 0.35, w, h * 0.65);
+
+                // ---- 波浪 ----
+                const waveCount = 5;
+                for (let wl = 0; wl < waveCount; wl++) {
+                    const baseY = h * 0.38 + wl * h * 0.055;
+                    const amp = 6 + wl * 3 + Math.sin(time * 0.2 + wl) * 2;
+                    const freq = 0.008 + wl * 0.0015;
+                    const speed = 0.4 + wl * 0.12;
+                    const alpha = 0.15 + wl * 0.06;
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, baseY);
+                    for (let x = 0; x <= w; x += 2) {
+                        const y = baseY +
+                            Math.sin(x * freq + time * speed + wl * 0.8) * amp +
+                            Math.sin(x * freq * 0.5 + time * speed * 0.6 + wl * 1.2) * amp * 0.4;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.lineTo(w, h);
+                    ctx.lineTo(0, h);
+                    ctx.closePath();
+                    ctx.fillStyle = `rgba(100, 200, 255, ${alpha})`;
+                    ctx.fill();
+                }
+
+                // ---- 水面高光 ----
+                for (let i = 0; i < 20; i++) {
+                    const x = (Math.sin(i * 2.7 + time * 0.1) * 0.5 + 0.5) * w;
+                    const y = h * 0.38 + Math.sin(i * 1.3 + time * 0.15) * h * 0.08 + h * 0.08;
+                    const r = 4 + Math.sin(i + time * 0.2) * 2 + 6;
+                    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+                    grad.addColorStop(0, `rgba(255, 255, 255, ${0.08 + Math.sin(time + i) * 0.02 + 0.02})`);
+                    grad.addColorStop(1, 'rgba(255,255,255,0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // ---- 远处海平线光晕 ----
+                const glow = ctx.createRadialGradient(w * 0.5, h * 0.35, 0, w * 0.5, h * 0.35, h * 0.5);
+                glow.addColorStop(0, 'rgba(255,220,180,0.06)');
+                glow.addColorStop(0.5, 'rgba(255,200,150,0.03)');
+                glow.addColorStop(1, 'rgba(255,200,150,0)');
+                ctx.fillStyle = glow;
+                ctx.fillRect(0, 0, w, h);
+            }
+
+            // ---- 绘制水花（垃圾入水） ----
+            function drawSplash(ctx, time, progress) {
+                if (progress <= 0 || progress > 1) return;
+                const cx = W * 0.5;
+                const cy = H * 0.5 + 20;
+
+                const count = 40;
+                const intensity = Math.sin(progress * Math.PI) * 1.2;
+
+                for (let i = 0; i < count; i++) {
+                    const angle = (i / count) * Math.PI * 2 + progress * 3;
+                    const dist = (0.2 + 0.8 * progress) * 50 * intensity;
+                    const x = cx + Math.cos(angle + i * 0.5) * dist * (0.4 + 0.6 * Math.random());
+                    const y = cy + Math.sin(angle + i * 0.7) * dist * 0.3 * (0.4 + 0.6 * Math.random()) - dist * 0.15;
+                    const size = 2 + Math.random() * 6 * (1 - progress * 0.3);
+                    const alpha = (1 - progress) * 0.6 * (0.5 + 0.5 * Math.random());
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(180, 230, 255, ${alpha})`;
+                    ctx.fill();
+                }
+
+                // 中心水花
+                const centerR = 4 + 12 * (1 - progress) * intensity;
+                const grad = ctx.createRadialGradient(cx, cy + 8, 0, cx, cy + 8, centerR);
+                grad.addColorStop(0, `rgba(200, 240, 255, ${0.3 * (1 - progress)})`);
+                grad.addColorStop(1, 'rgba(200,240,255,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(cx, cy + 8, centerR, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // ---- 绘制下落垃圾（开场的那个） ----
+            function drawFallingTrash(ctx, time, progress) {
+                if (progress < 0 || progress > 1) return;
+                const cx = W * 0.5;
+                const cy = H * 0.5;
+
+                // 从上方落下
+                const startY = -80;
+                const endY = 0;
+                const yPos = startY + (endY - startY) * progress;
+                const xOff = Math.sin(progress * 2) * 8;
+
+                // 旋转
+                const rot = progress * 3.5;
+
+                ctx.save();
+                ctx.translate(cx + xOff, cy + yPos);
+                ctx.rotate(rot);
+                const s = 1.2 + 0.2 * Math.sin(progress * 5);
+                ctx.scale(s, s);
+
+                // 绘制一个塑料瓶（醒目）
+                const colors = ['#ff6b4a', '#e0553a', '#ff8a6a'];
+                ctx.shadowColor = 'rgba(0,0,0,0.4)';
+                ctx.shadowBlur = 20;
+
+                ctx.beginPath();
+                ctx.rect(-16, -10, 32, 34);
+                ctx.fillStyle = colors[0];
+                ctx.fill();
+                ctx.strokeStyle = colors[1];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                // 瓶盖
+                ctx.beginPath();
+                ctx.rect(-7, -16, 14, 8);
+                ctx.fillStyle = colors[2];
+                ctx.fill();
+                // 标签
+                ctx.beginPath();
+                ctx.rect(-12, 0, 24, 12);
+                ctx.fillStyle = 'rgba(255,255,240,0.3)';
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,240,0.5)';
+                ctx.font = 'bold 8px sans-serif';
+                ctx.fillText('♻', -4, 9);
+
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // 拖尾效果
+                if (progress < 0.9) {
+                    const trailCount = 12;
+                    for (let i = 0; i < trailCount; i++) {
+                        const t = i / trailCount;
+                        const p = progress - t * 0.08;
+                        if (p < 0) continue;
+                        const ty = startY + (endY - startY) * p;
+                        const tx = cx + Math.sin(p * 2) * 8;
+                        const alpha = (1 - t) * 0.15;
+                        ctx.beginPath();
+                        ctx.arc(tx, cy + ty, 6 * (1 - t * 0.6), 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(255, 200, 150, ${alpha})`;
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // ---- 主渲染循环 ----
+            function render(timestamp) {
+                if (!timestamp) timestamp = performance.now();
+                if (!render.startTime) render.startTime = timestamp;
+                const delta = (timestamp - render.startTime) / 1000;
+                elapsed = delta;
+
+                // 限制时间线
+                const t = Math.min(elapsed, T.END);
+
+                // ---- 计算镜头参数 ----
+                let zoom = 1.0;
+                let tx = 0,
+                    ty = 0;
+
+                // 镜头拉远：从 zoom=1.2 到 zoom=0.35
+                const zoomStart = 1.2;
+                const zoomEnd = 0.35;
+
+                if (t < T.ZOOM_START) {
+                    zoom = zoomStart;
+                } else if (t < T.ZOOM_END) {
+                    const p = (t - T.ZOOM_START) / (T.ZOOM_END - T.ZOOM_START);
+                    const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+                    zoom = lerp(zoomStart, zoomEnd, ease);
+                } else {
+                    zoom = zoomEnd;
+                }
+
+                // 微小偏移，让视觉中心略微下移
+                const centerY = 0.02;
+
+                // ---- 清空画布 ----
+                ctx.clearRect(0, 0, W, H);
+
+                // ---- 绘制海洋背景 ----
+                drawOcean(ctx, t, zoom);
+
+                // ---- 应用镜头变换 ----
+                ctx.save();
+                const cx = W / 2;
+                const cy = H / 2;
+                ctx.translate(cx, cy);
+                ctx.scale(zoom, zoom);
+                ctx.translate(tx, ty + centerY * 100 / zoom);
+
+                // ---- 绘制所有垃圾 ----
+                for (const item of trashItems) {
+                    drawTrash(ctx, item, t, zoom);
+                }
+
+                // ---- 绘制开场下落垃圾 ----
+                if (t < T.SPLASH) {
+                    const dropProgress = clamp((t - T.DROP) / (T.SPLASH - T.DROP), 0, 1);
+                    drawFallingTrash(ctx, t, dropProgress);
+                }
+
+                // ---- 绘制水花 ----
+                if (t >= T.DROP && t < T.ZOOM_START + 0.6) {
+                    const splashProgress = clamp((t - T.DROP) / 1.2, 0, 1);
+                    drawSplash(ctx, t, splashProgress);
+                }
+
+                ctx.restore();
+
+                // ---- 显示文字 ----
+                if (t >= T.TEXT_START) {
+                    const textProgress = clamp((t - T.TEXT_START) / (T.TEXT_END - T.TEXT_START), 0, 1);
+                    const easeText = textProgress < 0.5 ? 2 * textProgress * textProgress :
+                        1 - Math.pow(-2 * textProgress + 2, 2) / 2;
+                    if (easeText > 0.01) {
+                        overlay.classList.add('visible');
+                        overlay.style.opacity = easeText;
+                        overlay.style.transform = `translateY(${(1 - easeText) * 30}px) scale(${0.96 + 0.04 * easeText})`;
+                    }
+                } else {
+                    overlay.classList.remove('visible');
+                    overlay.style.opacity = 0;
+                }
+
+                // ---- 继续动画 ----
+                if (t < T.END || !isFinished) {
+                    animationId = requestAnimationFrame(render);
+                } else {
+                    isFinished = true;
+                }
+            }
+
+            // ---- 启动 ----
+            function startAnimation() {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                render.startTime = null;
+                elapsed = 0;
+                isFinished = false;
+                overlay.classList.remove('visible');
+                overlay.style.opacity = 0;
+                animationId = requestAnimationFrame(render);
+            }
+
+            // ---- 窗口变化重置 ----
+            window.addEventListener('resize', () => {
+                resize();
+                // 保持动画继续
+            });
+
+            // ---- 按钮交互 ----
+            document.getElementById('actionBtn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                alert('🌊 感谢你关心海洋！\n\n每一次减少塑料使用，\n都是在为海洋生物争取生存的机会。\n\n从今天起，让我们一起行动起来！');
+                this.textContent = '❤️ 已加入守护';
+                this.style.opacity = '0.7';
+                setTimeout(() => {
+                    this.textContent = '加入守护 · 从我开始';
+                    this.style.opacity = '1';
+                }, 2500);
+            });
+
+            // ---- 启动 ----
+            startAnimation();
+
+            // ---- 如果页面失去焦点，继续运行 ----
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && !animationId) {
+                    startAnimation();
+                }
+            });
+
+            console.log('🌊 保护海洋 · 不要让海里只有垃圾');
+            console.log('💙 每一个微小的行动，都能带来改变。');
+
+        })();
+    </script>
+
+</body>
+</html>
