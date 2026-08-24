@@ -1,0 +1,2220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D 自然地图生成器 · 高密度森林</title>
+    <style>
+        /* ===== 全局 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0b0f1a;
+            color: #e8edf5;
+            overflow: hidden;
+            height: 100vh;
+            user-select: none;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+        /* ===== 控制面板 ===== */
+        #control-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 290px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            background: rgba(13, 18, 30, 0.88);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px 18px 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+            pointer-events: auto;
+            z-index: 10;
+        }
+        #control-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+        #control-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #control-panel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel-title small {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.5;
+            margin-left: auto;
+        }
+        .panel-divider {
+            height: 1px;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.2), transparent);
+            margin: 12px 0 16px;
+        }
+
+        .control-group {
+            margin-bottom: 14px;
+        }
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.8;
+            margin-bottom: 4px;
+        }
+        .control-group label span {
+            opacity: 0.6;
+            font-weight: 400;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+            transition: background 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6c8cff;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            transition: transform 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6c8cff;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .control-check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .control-check input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #6c8cff;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .control-check label {
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.9;
+            cursor: pointer;
+        }
+
+        .btn-generate {
+            width: 100%;
+            padding: 12px 0;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #6c8cff, #a78bfa);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.25s;
+            box-shadow: 0 4px 20px rgba(108, 140, 255, 0.3);
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(108, 140, 255, 0.45);
+        }
+        .btn-generate:active {
+            transform: translateY(0px);
+        }
+
+        /* ===== 步骤显示 ===== */
+        #step-display {
+            margin-top: 14px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            border-left: 3px solid #6c8cff;
+            font-size: 13px;
+            font-weight: 500;
+            color: #c8d0e6;
+            transition: all 0.2s;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+        #step-display .step-icon {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        #step-display .step-text {
+            flex: 1;
+        }
+        #step-display .step-progress {
+            font-size: 11px;
+            opacity: 0.5;
+            margin-left: 8px;
+        }
+
+        /* ===== 信息显示 ===== */
+        #info-display {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.2s;
+            min-height: 80px;
+        }
+        #info-display .info-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            opacity: 0.4;
+            margin-bottom: 6px;
+        }
+        #info-display .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 12px;
+            font-size: 13px;
+        }
+        #info-display .info-grid .label {
+            opacity: 0.6;
+        }
+        #info-display .info-grid .value {
+            font-weight: 500;
+            text-align: right;
+        }
+        #info-display .info-grid .value.highlight {
+            color: #6c8cff;
+        }
+        .info-placeholder {
+            opacity: 0.3;
+            font-style: italic;
+            font-size: 13px;
+            text-align: center;
+            padding: 12px 0;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 14px;
+            font-size: 12px;
+            opacity: 0.6;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .stats-row span {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            opacity: 0.7;
+        }
+        .legend-item .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        /* ===== 加载 ===== */
+        #loading {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0b0f1a;
+            z-index: 999;
+            transition: opacity 0.8s ease;
+        }
+        #loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #loading .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.08);
+            border-top-color: #6c8cff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        #loading p {
+            margin-top: 18px;
+            font-size: 15px;
+            opacity: 0.6;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== 漫步模式提示 ===== */
+        #walk-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 14px;
+            color: #fff;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+            z-index: 20;
+            white-space: nowrap;
+        }
+        #walk-hint.visible {
+            opacity: 1;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 700px) {
+            #control-panel {
+                width: 240px;
+                padding: 16px 14px 18px;
+                top: 12px;
+                right: 12px;
+            }
+            .panel-title {
+                font-size: 16px;
+            }
+            .control-group label {
+                font-size: 12px;
+            }
+            .btn-generate {
+                font-size: 14px;
+                padding: 10px 0;
+            }
+            #info-display .info-grid {
+                font-size: 12px;
+            }
+            #step-display {
+                font-size: 12px;
+                padding: 8px 10px;
+            }
+            .control-check label {
+                font-size: 12px;
+            }
+        }
+        @media (max-width: 480px) {
+            #control-panel {
+                width: 200px;
+                padding: 12px 10px 14px;
+                top: 8px;
+                right: 8px;
+                border-radius: 12px;
+            }
+            .panel-title {
+                font-size: 14px;
+            }
+            .panel-title small {
+                display: none;
+            }
+            .control-group {
+                margin-bottom: 10px;
+            }
+            .control-group label {
+                font-size: 11px;
+            }
+            input[type="range"] {
+                height: 3px;
+            }
+            input[type="range"]::-webkit-slider-thumb {
+                width: 14px;
+                height: 14px;
+            }
+            .btn-generate {
+                font-size: 13px;
+                padding: 10px 0;
+            }
+            .stats-row {
+                font-size: 10px;
+                gap: 6px;
+            }
+            .stats-row span {
+                padding: 2px 8px;
+            }
+            #info-display .info-grid {
+                font-size: 11px;
+                grid-template-columns: 1fr 1fr;
+            }
+            #step-display {
+                font-size: 11px;
+                padding: 6px 8px;
+                min-height: 32px;
+            }
+            .control-check label {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 加载 -->
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>🌍 生成高密度森林…</p>
+    </div>
+
+    <!-- 3D 容器 -->
+    <div id="canvas-container"></div>
+
+    <!-- 漫步提示 -->
+    <div id="walk-hint">🚶 WASD 移动 · 鼠标视角 · Shift 抬高 · ESC 退出</div>
+
+    <!-- 控制面板 -->
+    <div id="control-panel">
+        <div class="panel-title">
+            🏔️ 地形生成器
+            <small>高密度森林</small>
+        </div>
+        <div class="panel-divider"></div>
+
+        <div class="control-group">
+            <label>随机种子 <span id="seed-val">42</span></label>
+            <input type="range" id="seed" min="1" max="9999" value="42" step="1" />
+        </div>
+        <div class="control-group">
+            <label>地形起伏 <span id="amp-val">1.0</span></label>
+            <input type="range" id="amplitude" min="0.2" max="2.5" value="1.0" step="0.05" />
+        </div>
+        <div class="control-group">
+            <label>噪声频率 <span id="freq-val">1.2</span></label>
+            <input type="range" id="frequency" min="0.3" max="3.0" value="1.2" step="0.05" />
+        </div>
+        <div class="control-group">
+            <label>⛰️ 板块挤压强度 <span id="plate-val">0.6</span></label>
+            <input type="range" id="plate-strength" min="0" max="2.0" value="0.6" step="0.05" />
+        </div>
+        <div class="control-group">
+            <label>🌊 海平面高度 <span id="sealevel-val">0.25</span></label>
+            <input type="range" id="sea-level" min="0.05" max="0.50" value="0.25" step="0.01" />
+        </div>
+        <div class="control-group">
+            <label>🌋 火山数量 <span id="volc-val">3</span></label>
+            <input type="range" id="volcanoes" min="0" max="8" value="3" step="1" />
+        </div>
+        <div class="control-group">
+            <label>🔥 火山强度 <span id="volc-str-val">0.8</span></label>
+            <input type="range" id="volcano-strength" min="0.1" max="2.0" value="0.8" step="0.05" />
+        </div>
+        <div class="control-group">
+            <label>🌡️ 温度偏移 <span id="temp-val">0.0</span></label>
+            <input type="range" id="temperature" min="-1.0" max="1.0" value="0.0" step="0.05" />
+        </div>
+        <div class="control-group">
+            <label>🌧️ 降雨量 <span id="rain-val">1.0</span></label>
+            <input type="range" id="rainfall" min="0.0" max="2.0" value="1.0" step="0.05" />
+        </div>
+        <div class="control-group">
+            <label>🌊 河流数量 <span id="river-val">6</span></label>
+            <input type="range" id="rivers" min="0" max="15" value="6" step="1" />
+        </div>
+        <div class="control-group">
+            <label>🌀 河流弯曲度 <span id="meander-val">0.5</span></label>
+            <input type="range" id="meander-strength" min="0.0" max="1.0" value="0.5" step="0.05" />
+        </div>
+        <div class="control-group">
+            <label>💧 河流水量 <span id="volume-val">1.0</span></label>
+            <input type="range" id="river-volume" min="0.2" max="2.0" value="1.0" step="0.05" />
+        </div>
+
+        <!-- 洞穴参数 -->
+        <div class="control-group">
+            <label>🕳️ 天坑数量 <span id="cave-count-val">5</span></label>
+            <input type="range" id="cave-count" min="0" max="20" value="5" step="1" />
+        </div>
+        <div class="control-group">
+            <label>📏 天坑大小 <span id="cave-size-val">1.0</span></label>
+            <input type="range" id="cave-size" min="0.5" max="3.0" value="1.0" step="0.05" />
+        </div>
+
+        <!-- 树木密度 (最高1.2) -->
+        <div class="control-group">
+            <label>🌳 树木密度 <span id="tree-density-val">0.8</span></label>
+            <input type="range" id="tree-density" min="0" max="1.2" value="0.8" step="0.05" />
+        </div>
+
+        <!-- 超级长江模式复选框 -->
+        <div class="control-check">
+            <input type="checkbox" id="giant-mode" />
+            <label for="giant-mode">🌊 长江模式 (超长河流，内测中)</label>
+        </div>
+
+        <!-- 漫步模式复选框 -->
+        <div class="control-check">
+            <input type="checkbox" id="walk-mode" />
+            <label for="walk-mode">🚶 漫步模式 (极低视角 · Shift 抬高)</label>
+        </div>
+
+        <button class="btn-generate" id="generate-btn">🔄 重新生成</button>
+
+        <!-- 步骤显示 -->
+        <div id="step-display">
+            <span class="step-icon">⏳</span>
+            <span class="step-text">等待生成</span>
+            <span class="step-progress"></span>
+        </div>
+
+        <!-- 信息显示 -->
+        <div id="info-display">
+            <div class="info-title">📍 点击地形查看详情</div>
+            <div class="info-placeholder">点击地图上的任意位置</div>
+            <div class="info-grid" style="display:none;">
+                <span class="label">海拔</span><span class="value" id="info-height">-</span>
+                <span class="label">温度</span><span class="value" id="info-temp">-</span>
+                <span class="label">湿度 (降雨)</span><span class="value" id="info-rain">-</span>
+                <span class="label">地形类型</span><span class="value highlight" id="info-terrain">-</span>
+                <span class="label">生态</span><span class="value" id="info-geo">-</span>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <span id="stat-vertices">顶点: 0</span>
+            <span id="stat-faces">面: 0</span>
+            <span id="stat-volcanoes">火山: 0</span>
+            <span id="stat-rivers">河流: 0</span>
+            <span id="stat-caves">洞穴: 0</span>
+        </div>
+
+        <div class="legend">
+            <span class="legend-item"><span class="dot" style="background:#2d7d46;"></span>森林</span>
+            <span class="legend-item"><span class="dot" style="background:#8cb36a;"></span>草地</span>
+            <span class="legend-item"><span class="dot" style="background:#c4a87a;"></span>干旱</span>
+            <span class="legend-item"><span class="dot" style="background:#8b6b4d;"></span>山地</span>
+            <span class="legend-item"><span class="dot" style="background:#e8e0d0;"></span>雪峰</span>
+            <span class="legend-item"><span class="dot" style="background:#c0392b;"></span>火山</span>
+            <span class="legend-item"><span class="dot" style="background:#1a5276;"></span>海洋</span>
+            <span class="legend-item"><span class="dot" style="background:#2e86c1;"></span>冲积平原</span>
+            <span class="legend-item"><span class="dot" style="background:#48c9b0;"></span>牛轭湖</span>
+            <span class="legend-item"><span class="dot" style="background:#2c3e50;"></span>洞穴</span>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        // ================================================================
+        //  导入
+        // ================================================================
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ================================================================
+        //  Perlin 噪声
+        // ================================================================
+        class PerlinNoise {
+            constructor(seed = 42) {
+                this.seed = seed;
+                this.perm = new Uint8Array(512);
+                const p = new Uint8Array(256);
+                for (let i = 0; i < 256; i++) p[i] = i;
+                let s = seed;
+                for (let i = 255; i > 0; i--) {
+                    s = (s * 16807 + 0) % 2147483647;
+                    const j = s % (i + 1);
+                    [p[i], p[j]] = [p[j], p[i]];
+                }
+                for (let i = 0; i < 512; i++) this.perm[i] = p[i & 255];
+            }
+
+            noise2D(x, y) {
+                const X = Math.floor(x) & 255;
+                const Y = Math.floor(y) & 255;
+                const xf = x - Math.floor(x);
+                const yf = y - Math.floor(y);
+                const u = this.fade(xf);
+                const v = this.fade(yf);
+                const p = this.perm;
+                const a = p[X] + Y;
+                const b = p[X + 1] + Y;
+                const grad = (h, dx, dy) => {
+                    const hh = h & 3;
+                    const uu = hh < 2 ? dx : dy;
+                    const vv = hh < 2 ? dy : dx;
+                    return ((hh & 1) ? -uu : uu) + ((hh & 2) ? -vv : vv);
+                };
+                const g1 = grad(p[a], xf, yf);
+                const g2 = grad(p[b], xf - 1, yf);
+                const g3 = grad(p[a + 1], xf, yf - 1);
+                const g4 = grad(p[b + 1], xf - 1, yf - 1);
+                const l1 = this.lerp(g1, g2, u);
+                const l2 = this.lerp(g3, g4, u);
+                return this.lerp(l1, l2, v);
+            }
+
+            fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+            lerp(a, b, t) { return a + t * (b - a); }
+
+            fbm(x, y, octaves = 4, lacunarity = 2.0, gain = 0.5) {
+                let value = 0,
+                    amplitude = 1,
+                    frequency = 1,
+                    maxVal = 0;
+                for (let i = 0; i < octaves; i++) {
+                    value += amplitude * this.noise2D(x * frequency, y * frequency);
+                    maxVal += amplitude;
+                    amplitude *= gain;
+                    frequency *= lacunarity;
+                }
+                return value / maxVal;
+            }
+        }
+
+        // ================================================================
+        //  地形生成器 (50倍高度)
+        // ================================================================
+        class TerrainGenerator {
+            constructor(size = 300) {
+                this.size = size;
+                this.heightMap = new Float32Array(size * size);
+                this.colorMap = new Float32Array(size * size * 3);
+                this.riverMap = new Uint8Array(size * size);
+                this.volcanoPositions = [];
+                this.riverPaths = [];
+                this.noise = null;
+                this.tempMap = null;
+                this.rainMap = null;
+                this.terrainTypeMap = new Uint8Array(size * size);
+                this.seaLevel = 0.25;
+                this.meanderStrength = 0.5;
+                this.riverVolume = 1.0;
+                this.giantMode = false;
+                this.floodplainMap = null;
+                this.oxbowMap = null;
+                this.cavePositions = [];
+                this.caveMap = new Uint8Array(size * size);
+                this.params = {
+                    seed: 42,
+                    amplitude: 1.0,
+                    frequency: 1.2,
+                    volcanoCount: 3,
+                    volcanoStrength: 0.8,
+                    temperatureOffset: 0.0,
+                    rainfall: 1.0,
+                    riverCount: 6,
+                    plateStrength: 0.6,
+                    seaLevel: 0.25,
+                    meanderStrength: 0.5,
+                    riverVolume: 1.0,
+                    giantMode: false,
+                    caveCount: 5,
+                    caveSize: 1.0,
+                };
+            }
+
+            setParams(params) {
+                Object.assign(this.params, params);
+                this.seaLevel = params.seaLevel;
+                this.meanderStrength = params.meanderStrength || 0.5;
+                this.riverVolume = params.riverVolume || 1.0;
+                this.giantMode = params.giantMode || false;
+                this.noise = new PerlinNoise(this.params.seed);
+            }
+
+            // ---- 子步骤 ----
+            generateHeightmap() {
+                const { size, params, noise } = this;
+                const { amplitude, frequency } = params;
+                const half = size / 2;
+                const scale = 4.0 / size;
+
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        const x = (i - half) * scale;
+                        const y = (j - half) * scale;
+                        let h = noise.fbm(x * frequency, y * frequency, 5, 2.1, 0.55);
+                        const dist = Math.sqrt((i - half) ** 2 + (j - half) ** 2) / half;
+                        const edgeFade = 1 - dist * dist * 0.25;
+                        h = h * amplitude * edgeFade;
+                        this.heightMap[i * size + j] = h;
+                    }
+                }
+                this._normalizeHeightMap();
+            }
+
+            applyPlateTectonics() {
+                const { size, heightMap, params, noise } = this;
+                const strength = params.plateStrength;
+                if (strength <= 0) return;
+                const half = size / 2;
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        const x = (i - half) / half;
+                        const squeeze = Math.exp(-x * x * 1.8) * strength;
+                        const n = noise.fbm(i * 0.025 + 1.7, j * 0.025 + 3.2, 2, 2.0, 0.5) * 0.3;
+                        const uplift = squeeze * (0.35 + 0.2 * n);
+                        heightMap[i * size + j] += uplift;
+                    }
+                }
+                this._normalizeHeightMap();
+            }
+
+            addVolcanoes() {
+                const { size, heightMap, params } = this;
+                const count = params.volcanoCount;
+                const strength = params.volcanoStrength;
+                this.volcanoPositions = [];
+                const half = size / 2;
+                const margin = size * 0.12;
+
+                for (let v = 0; v < count; v++) {
+                    let cx, cy;
+                    let attempts = 0;
+                    do {
+                        cx = margin + Math.random() * (size - 2 * margin);
+                        cy = margin + Math.random() * (size - 2 * margin);
+                        attempts++;
+                    } while (attempts < 30 && this.volcanoPositions.some(p =>
+                            Math.hypot(p[0] - cx, p[1] - cy) < size * 0.08
+                        ));
+                    this.volcanoPositions.push([cx, cy]);
+
+                    const radius = size * (0.03 + Math.random() * 0.06) * (0.7 + strength * 0.4);
+                    const peakHeight = 0.4 + strength * 0.5 + Math.random() * 0.2;
+
+                    for (let i = 0; i < size; i++) {
+                        for (let j = 0; j < size; j++) {
+                            const dx = i - cx,
+                                dy = j - cy;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < radius) {
+                                const t = dist / radius;
+                                const cone = 1 - t * t;
+                                const heightAdd = peakHeight * cone * (1 + 0.3 * Math.sin(dist * 5));
+                                const idx = i * size + j;
+                                heightMap[idx] += heightAdd * 0.6;
+                                if (t < 0.15) {
+                                    const crater = (t / 0.15) ** 2;
+                                    heightMap[idx] -= peakHeight * 0.25 * (1 - crater);
+                                }
+                            }
+                        }
+                    }
+                }
+                this._normalizeHeightMap();
+            }
+
+            computeTemperature() {
+                const { size, heightMap, params } = this;
+                const offset = params.temperatureOffset;
+                const tempMap = new Float32Array(size * size);
+                const half = size / 2;
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        const lat = (j - half) / half;
+                        let temp = 0.5 - lat * 0.4 + offset * 0.25;
+                        const h = heightMap[i * size + j];
+                        temp -= h * 0.45;
+                        temp = Math.max(0, Math.min(1, temp));
+                        tempMap[i * size + j] = temp;
+                    }
+                }
+                this.tempMap = tempMap;
+                return tempMap;
+            }
+
+            computeRainfall() {
+                const { size, heightMap, params, tempMap } = this;
+                if (!tempMap) throw new Error('Temperature map not computed');
+                const rainBase = params.rainfall;
+                const rainMap = new Float32Array(size * size);
+                const windDir = { x: 1, y: 0.3 };
+
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        const temp = tempMap[i * size + j];
+                        const tempFactor = Math.sin(temp * Math.PI) * 0.7 + 0.3;
+                        let slope = 0;
+                        if (i > 0 && i < size - 1 && j > 0 && j < size - 1) {
+                            const dx = heightMap[(i + 1) * size + j] - heightMap[(i - 1) * size + j];
+                            const dy = heightMap[i * size + j + 1] - heightMap[i * size + j - 1];
+                            const grad = Math.sqrt(dx * dx + dy * dy);
+                            const norm = Math.sqrt(dx * dx + dy * dy) || 0.001;
+                            const dirDot = (dx / norm) * windDir.x + (dy / norm) * windDir.y;
+                            slope = Math.max(0, dirDot) * grad * 1.2;
+                        }
+                        let rain = (tempFactor * 0.6 + 0.2) * rainBase;
+                        rain += slope * 0.4 * rainBase;
+                        rain = Math.max(0.05, Math.min(1.2, rain));
+                        rainMap[i * size + j] = rain;
+                    }
+                }
+                this.rainMap = rainMap;
+                return rainMap;
+            }
+
+            // ---- 超长河流生成 ----
+            simulateRivers() {
+                const { size, heightMap, params, tempMap, rainMap, meanderStrength, riverVolume, giantMode } = this;
+                if (!tempMap || !rainMap) throw new Error('Temperature or rainfall not computed');
+                let riverCount = params.riverCount;
+                this.riverPaths = [];
+                this.riverMap.fill(0);
+
+                const floodplainMap = new Float32Array(size * size);
+                const oxbowMap = new Uint8Array(size * size);
+
+                if (riverCount === 0) {
+                    this.floodplainMap = floodplainMap;
+                    this.oxbowMap = oxbowMap;
+                    return;
+                }
+
+                const dirs = [
+                    [-1, -1],
+                    [-1, 0],
+                    [-1, 1],
+                    [0, -1],
+                    [0, 1],
+                    [1, -1],
+                    [1, 0],
+                    [1, 1]
+                ];
+
+                let effectiveVolume = riverVolume;
+                let maxSteps = size * (4 + 6 * effectiveVolume);
+                let maxDepth = 2 + Math.floor(effectiveVolume * 2.5);
+                let branchProb = 0.15 + 0.35 * effectiveVolume;
+                let erosionStrength = 0.02;
+                let riverWidth = 1;
+
+                if (giantMode) {
+                    riverCount = 1;
+                    maxSteps = size * 80;
+                    maxDepth = 6;
+                    branchProb = 0.35;
+                    erosionStrength = 0.04;
+                    riverWidth = 2;
+                }
+
+                const starts = [];
+                for (let attempt = 0; attempt < riverCount * 20; attempt++) {
+                    const i = Math.floor(5 + Math.random() * (size - 10));
+                    const j = Math.floor(5 + Math.random() * (size - 10));
+                    const h = heightMap[i * size + j];
+                    const low = giantMode ? 0.45 : 0.3;
+                    const high = 0.85;
+                    if (h > low && h < high) {
+                        let tooClose = false;
+                        for (const s of starts) {
+                            if (Math.hypot(s[0] - i, s[1] - j) < size * 0.08) { tooClose = true; break; }
+                        }
+                        if (!tooClose) starts.push([i, j]);
+                        if (starts.length >= riverCount) break;
+                    }
+                }
+
+                if (starts.length < riverCount) {
+                    let bestH = -Infinity,
+                        bestI = Math.floor(size / 2),
+                        bestJ = Math.floor(size / 2);
+                    for (let i = 5; i < size - 5; i++) {
+                        for (let j = 5; j < size - 5; j++) {
+                            const h = heightMap[i * size + j];
+                            if (h > bestH) {
+                                bestH = h;
+                                bestI = i;
+                                bestJ = j;
+                            }
+                        }
+                    }
+                    if (bestH < 0.1) {
+                        bestI = Math.floor(size / 2);
+                        bestJ = Math.floor(size / 2);
+                    }
+                    starts.push([bestI, bestJ]);
+                }
+
+                while (starts.length > riverCount) starts.pop();
+
+                const allPaths = [];
+
+                const traceRiver = (start, depth) => {
+                    const path = [];
+                    let ci = start[0],
+                        cj = start[1];
+                    let steps = 0;
+                    const localVisited = new Set();
+
+                    while (steps < maxSteps) {
+                        const key = ci * size + cj;
+                        if (localVisited.has(key)) break;
+                        localVisited.add(key);
+                        path.push([ci, cj]);
+
+                        for (let di = -riverWidth; di <= riverWidth; di++) {
+                            for (let dj = -riverWidth; dj <= riverWidth; dj++) {
+                                const ni = ci + di,
+                                    nj = cj + dj;
+                                if (ni < 0 || ni >= size || nj < 0 || nj >= size) continue;
+                                const dist2 = di * di + dj * dj;
+                                if (dist2 > riverWidth * riverWidth) continue;
+                                this.riverMap[ni * size + nj] = 1;
+                            }
+                        }
+
+                        const idx = ci * size + cj;
+                        heightMap[idx] -= erosionStrength * (1 + 0.5 * (1 - heightMap[idx]));
+
+                        const neighbors = [];
+                        for (const [di, dj] of dirs) {
+                            const ni = ci + di,
+                                nj = cj + dj;
+                            if (ni < 0 || ni >= size || nj < 0 || nj >= size) continue;
+                            const h = heightMap[ni * size + nj];
+                            neighbors.push({ i: ni, j: nj, h: h });
+                        }
+                        if (neighbors.length === 0) break;
+
+                        neighbors.sort((a, b) => a.h - b.h);
+
+                        let chosen = null;
+                        const lowCount = Math.min(4, neighbors.length);
+                        const candidates = neighbors.slice(0, lowCount);
+                        if (Math.random() < meanderStrength * 0.7) {
+                            const idx = Math.floor(Math.random() * candidates.length);
+                            chosen = candidates[idx];
+                        } else {
+                            chosen = candidates[0];
+                        }
+
+                        if (path.length > 3) {
+                            const prev = path[path.length - 2];
+                            const dx = chosen.i - prev[0];
+                            const dy = chosen.j - prev[1];
+                            const lastDx = ci - prev[0];
+                            const lastDy = cj - prev[1];
+                            if (dx === -lastDx && dy === -lastDy) {
+                                if (candidates.length > 1) {
+                                    chosen = candidates[1];
+                                } else {
+                                    const rand = neighbors[Math.floor(Math.random() * neighbors.length)];
+                                    chosen = rand;
+                                }
+                            }
+                        }
+
+                        ci = chosen.i;
+                        cj = chosen.j;
+                        steps++;
+
+                        if (depth < maxDepth && steps % (giantMode ? 8 : 12) === 0 && Math.random() < branchProb) {
+                            const branchCandidates = neighbors.filter(n => {
+                                const k = n.i * size + n.j;
+                                return this.riverMap[k] === 0 && !localVisited.has(k);
+                            });
+                            if (branchCandidates.length > 0) {
+                                const idx = Math.floor(Math.random() * Math.min(2, branchCandidates.length));
+                                const branchStart = branchCandidates[idx];
+                                const branchPath = traceRiver([branchStart.i, branchStart.j], depth + 1);
+                                if (branchPath && branchPath.length > 5) {
+                                    allPaths.push(branchPath);
+                                }
+                            }
+                        }
+                    }
+                    return path;
+                };
+
+                for (const start of starts) {
+                    const mainPath = traceRiver(start, 0);
+                    if (mainPath.length > 5) {
+                        allPaths.push(mainPath);
+                    }
+                }
+
+                this.riverPaths = allPaths;
+
+                for (const path of allPaths) {
+                    if (path.length < 10) continue;
+                    const len = path.length;
+                    const startIdx = Math.floor(len * 0.6);
+                    for (let k = startIdx; k < len; k++) {
+                        const [ri, rj] = path[k];
+                        const radius = (giantMode ? 5 : 3) + Math.floor((k - startIdx) / (20 / effectiveVolume));
+                        for (let di = -radius; di <= radius; di++) {
+                            for (let dj = -radius; dj <= radius; dj++) {
+                                const i2 = ri + di,
+                                    j2 = rj + dj;
+                                if (i2 < 0 || i2 >= size || j2 < 0 || j2 >= size) continue;
+                                const dist2 = di * di + dj * dj;
+                                if (dist2 > radius * radius) continue;
+                                const idx = i2 * size + j2;
+                                const factor = 1 - Math.sqrt(dist2) / radius;
+                                const targetH = this.seaLevel * 0.8 + 0.02 * (1 - factor);
+                                const current = heightMap[idx];
+                                if (current > targetH) {
+                                    heightMap[idx] += (targetH - current) * 0.5 * factor;
+                                    floodplainMap[idx] = 1;
+                                }
+                            }
+                        }
+                    }
+
+                    if (path.length > 20) {
+                        for (let k = 8; k < path.length - 8; k += 12) {
+                            const [x0, y0] = path[k - 3];
+                            const [x1, y1] = path[k];
+                            const [x2, y2] = path[k + 3];
+                            const v1x = x1 - x0,
+                                v1y = y1 - y0;
+                            const v2x = x2 - x1,
+                                v2y = y2 - y1;
+                            const dot = v1x * v2x + v1y * v2y;
+                            const len1 = Math.sqrt(v1x * v1x + v1y * v1y);
+                            const len2 = Math.sqrt(v2x * v2x + v2y * v2y);
+                            if (len1 === 0 || len2 === 0) continue;
+                            const cosAngle = dot / (len1 * len2);
+                            const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle)));
+                            if (angle > 2.0) {
+                                const cx = (x0 + x2) / 2,
+                                    cy = (y0 + y2) / 2;
+                                const radiusLake = 2 + Math.random() * 2;
+                                for (let di = -radiusLake; di <= radiusLake; di++) {
+                                    for (let dj = -radiusLake; dj <= radiusLake; dj++) {
+                                        const i2 = cx + di,
+                                            j2 = cy + dj;
+                                        if (i2 < 0 || i2 >= size || j2 < 0 || j2 >= size) continue;
+                                        const dist2 = di * di + dj * dj;
+                                        if (dist2 > radiusLake * radiusLake) continue;
+                                        const idx = i2 * size + j2;
+                                        const target = this.seaLevel * 0.7 + 0.02;
+                                        if (heightMap[idx] > target) {
+                                            heightMap[idx] += (target - heightMap[idx]) * 0.7;
+                                            oxbowMap[idx] = 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                this._normalizeHeightMap();
+                this.floodplainMap = floodplainMap;
+                this.oxbowMap = oxbowMap;
+
+                console.log(`✅ 生成河流 ${this.riverPaths.length} 条，总段数: ${this.riverPaths.reduce((sum, p) => sum + p.length, 0)}`);
+                if (this.riverPaths.length > 0) {
+                    console.log(`  主流长度: ${this.riverPaths[0].length}`);
+                }
+            }
+
+            // ---- 生成洞穴 ----
+            generateCaves() {
+                const { size, heightMap, params } = this;
+                const count = params.caveCount || 5;
+                const sizeFactor = params.caveSize || 1.0;
+                if (count === 0) {
+                    this.caveMap.fill(0);
+                    this.cavePositions = [];
+                    return;
+                }
+
+                this.caveMap.fill(0);
+                this.cavePositions = [];
+
+                const candidates = [];
+                for (let i = 5; i < size - 5; i++) {
+                    for (let j = 5; j < size - 5; j++) {
+                        const h = heightMap[i * size + j];
+                        if (h > 0.4 && this.riverMap[i * size + j] === 0) {
+                            let inVolcano = false;
+                            for (const [vx, vy] of this.volcanoPositions) {
+                                if (Math.hypot(i - vx, j - vy) < size * 0.06) { inVolcano = true; break; }
+                            }
+                            if (!inVolcano) {
+                                candidates.push({ i, j, h });
+                            }
+                        }
+                    }
+                }
+                if (candidates.length === 0) return;
+
+                const selected = [];
+                const minDist = size * 0.08 * (1 + sizeFactor * 0.5);
+                for (let c = 0; c < count; c++) {
+                    if (selected.length >= candidates.length) break;
+                    let idx = Math.floor(Math.random() * candidates.length);
+                    let attempts = 0;
+                    let found = false;
+                    while (attempts < 50 && !found) {
+                        const cand = candidates[idx];
+                        let overlap = false;
+                        for (const sel of selected) {
+                            const dist = Math.hypot(cand.i - sel.i, cand.j - sel.j);
+                            if (dist < minDist) { overlap = true; break; }
+                        }
+                        if (!overlap) {
+                            selected.push(cand);
+                            found = true;
+                        } else {
+                            idx = Math.floor(Math.random() * candidates.length);
+                            attempts++;
+                        }
+                    }
+                    if (!found) break;
+                }
+
+                const caveRadius = size * 0.025 * sizeFactor;
+                const targetHeight = this.seaLevel * 0.6 + 0.02;
+                for (const sel of selected) {
+                    const cx = sel.i,
+                        cy = sel.j;
+                    this.cavePositions.push([cx, cy]);
+                    for (let i = Math.max(0, Math.floor(cx - caveRadius * 1.5)); i < Math.min(size, Math.ceil(cx + caveRadius *
+                            1.5)); i++) {
+                        for (let j = Math.max(0, Math.floor(cy - caveRadius * 1.5)); j < Math.min(size, Math.ceil(cy +
+                                caveRadius * 1.5)); j++) {
+                            const dist = Math.hypot(i - cx, j - cy);
+                            if (dist < caveRadius) {
+                                const t = dist / caveRadius;
+                                const factor = 1 - t * t;
+                                const current = heightMap[i * size + j];
+                                const target = current - (current - targetHeight) * factor * 0.8;
+                                heightMap[i * size + j] = target;
+                                this.caveMap[i * size + j] = 1;
+                            }
+                        }
+                    }
+                }
+
+                this._normalizeHeightMap();
+            }
+
+            generateColors() {
+                const { size, heightMap, colorMap, riverMap, volcanoPositions, seaLevel, tempMap, rainMap } = this;
+                if (!tempMap || !rainMap) throw new Error('Temperature or rainfall not computed');
+                const lavaRadius = size * 0.04;
+                const isLava = (i, j) => {
+                    for (const [vx, vy] of volcanoPositions) {
+                        if (Math.hypot(i - vx, j - vy) < lavaRadius) return true;
+                    }
+                    return false;
+                };
+
+                const floodplainMap = this.floodplainMap || new Float32Array(size * size);
+                const oxbowMap = this.oxbowMap || new Uint8Array(size * size);
+                const caveMap = this.caveMap || new Uint8Array(size * size);
+
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        const idx = i * size + j;
+                        const h = heightMap[idx];
+                        const temp = tempMap[idx];
+                        const rain = rainMap[idx];
+                        const isRiver = riverMap[idx] === 1;
+                        const isLavaZone = isLava(i, j);
+                        const isFloodplain = floodplainMap[idx] > 0.5;
+                        const isOxbow = oxbowMap[idx] === 1;
+                        const isCave = caveMap[idx] === 1;
+
+                        let r, g, b;
+
+                        if (isCave) {
+                            const depth = Math.min(1, (seaLevel * 0.8 - h) / (seaLevel * 0.8));
+                            const dark = 0.08 + 0.12 * (1 - depth);
+                            r = dark * 0.6;
+                            g = dark * 0.5;
+                            b = dark * 0.7;
+                            colorMap[idx * 3] = Math.min(1, r);
+                            colorMap[idx * 3 + 1] = Math.min(1, g);
+                            colorMap[idx * 3 + 2] = Math.min(1, b);
+                            continue;
+                        }
+
+                        if (h < seaLevel) {
+                            const depth = (seaLevel - h) / seaLevel;
+                            r = 0.02 + 0.05 * (1 - depth);
+                            g = 0.05 + 0.15 * (1 - depth);
+                            b = 0.25 + 0.45 * (1 - depth);
+                            if (depth < 0.3) {
+                                const shallow = depth / 0.3;
+                                r += 0.1 * (1 - shallow);
+                                g += 0.2 * (1 - shallow);
+                                b += 0.1 * (1 - shallow);
+                            }
+                            colorMap[idx * 3] = Math.min(1, r);
+                            colorMap[idx * 3 + 1] = Math.min(1, g);
+                            colorMap[idx * 3 + 2] = Math.min(1, b);
+                            continue;
+                        }
+
+                        if (isOxbow) {
+                            r = 0.1;
+                            g = 0.5;
+                            b = 0.6;
+                            colorMap[idx * 3] = r;
+                            colorMap[idx * 3 + 1] = g;
+                            colorMap[idx * 3 + 2] = b;
+                            continue;
+                        }
+
+                        if (isFloodplain) {
+                            r = 0.5 + 0.2 * (1 - h);
+                            g = 0.6 + 0.2 * (1 - h);
+                            b = 0.2 + 0.1 * (1 - h);
+                            colorMap[idx * 3] = Math.min(1, r);
+                            colorMap[idx * 3 + 1] = Math.min(1, g);
+                            colorMap[idx * 3 + 2] = Math.min(1, b);
+                            continue;
+                        }
+
+                        if (isLavaZone) {
+                            const distToCenter = Math.min(...volcanoPositions.map(([vx, vy]) =>
+                                Math.hypot(i - vx, j - vy)));
+                            const t = Math.min(1, distToCenter / lavaRadius);
+                            const glow = 1 - t * t;
+                            r = 0.9 + 0.1 * glow;
+                            g = 0.25 + 0.3 * glow;
+                            b = 0.05 + 0.1 * glow;
+                            colorMap[idx * 3] = r;
+                            colorMap[idx * 3 + 1] = g;
+                            colorMap[idx * 3 + 2] = b;
+                            continue;
+                        }
+
+                        if (isRiver) {
+                            const depth = 0.4 + 0.6 * (1 - h);
+                            r = 0.1 + 0.1 * (1 - depth);
+                            g = 0.3 + 0.3 * depth;
+                            b = 0.6 + 0.4 * depth;
+                            colorMap[idx * 3] = r;
+                            colorMap[idx * 3 + 1] = g;
+                            colorMap[idx * 3 + 2] = b;
+                            continue;
+                        }
+
+                        let baseR, baseG, baseB;
+
+                        if (h < 0.15) {
+                            const t = (h - 0.05) / 0.1;
+                            baseR = 0.6 + 0.2 * t;
+                            baseG = 0.5 + 0.15 * t;
+                            baseB = 0.25 + 0.1 * t;
+                        } else if (h < 0.35) {
+                            const t = (h - 0.15) / 0.2;
+                            const green = 0.35 + 0.5 * (1 - t) * rain;
+                            const brown = 0.2 + 0.3 * t * (1 - rain * 0.3);
+                            baseR = 0.15 + 0.25 * (1 - t) + brown * 0.4;
+                            baseG = 0.35 + green * 0.5 + 0.15 * t;
+                            baseB = 0.05 + 0.15 * (1 - t) + 0.05 * t;
+                            const coldFactor = Math.max(0, 1 - temp * 2);
+                            baseR -= coldFactor * 0.1;
+                            baseG -= coldFactor * 0.15;
+                            baseB += coldFactor * 0.05;
+                        } else if (h < 0.55) {
+                            const t = (h - 0.35) / 0.2;
+                            baseR = 0.3 + 0.35 * t;
+                            baseG = 0.4 + 0.2 * (1 - t) * rain + 0.1 * t;
+                            baseB = 0.1 + 0.05 * t;
+                            const coldFactor = Math.max(0, 1 - temp * 1.5);
+                            baseR += coldFactor * 0.1;
+                            baseG += coldFactor * 0.05;
+                            baseB += coldFactor * 0.1;
+                        } else if (h < 0.75) {
+                            const t = (h - 0.55) / 0.2;
+                            baseR = 0.5 + 0.25 * t;
+                            baseG = 0.35 + 0.15 * t * (1 - rain * 0.3);
+                            baseB = 0.15 + 0.1 * t;
+                            const cold = Math.max(0, 1 - temp * 1.8);
+                            baseR += cold * 0.15;
+                            baseG += cold * 0.1;
+                            baseB += cold * 0.2;
+                        } else {
+                            const t = (h - 0.75) / 0.25;
+                            const snow = Math.min(1, t * 1.2);
+                            baseR = 0.5 + 0.4 * snow;
+                            baseG = 0.4 + 0.45 * snow;
+                            baseB = 0.3 + 0.6 * snow;
+                            if (h > 0.9) {
+                                const white = (h - 0.9) / 0.1;
+                                baseR += white * 0.3;
+                                baseG += white * 0.3;
+                                baseB += white * 0.3;
+                            }
+                        }
+
+                        if (rain < 0.3) {
+                            const dry = (0.3 - rain) / 0.3;
+                            baseR += dry * 0.2;
+                            baseG += dry * 0.05;
+                            baseB -= dry * 0.1;
+                        }
+                        if (temp > 0.7 && h < 0.3) {
+                            const hot = (temp - 0.7) / 0.3;
+                            baseR += hot * 0.2;
+                            baseG -= hot * 0.1;
+                            baseB -= hot * 0.1;
+                        }
+
+                        r = Math.max(0.02, Math.min(1, baseR));
+                        g = Math.max(0.02, Math.min(1, baseG));
+                        b = Math.max(0.02, Math.min(1, baseB));
+
+                        const latFactor = 0.85 + 0.15 * (j / size);
+                        r *= latFactor;
+                        g *= latFactor;
+                        b *= latFactor;
+
+                        colorMap[idx * 3] = r;
+                        colorMap[idx * 3 + 1] = g;
+                        colorMap[idx * 3 + 2] = b;
+                    }
+                }
+            }
+
+            computeTerrainTypes() {
+                const { size, heightMap, seaLevel, floodplainMap, oxbowMap, caveMap } = this;
+                const typeMap = this.terrainTypeMap;
+                const slopeMap = new Float32Array(size * size);
+                for (let i = 1; i < size - 1; i++) {
+                    for (let j = 1; j < size - 1; j++) {
+                        const dx = heightMap[(i + 1) * size + j] - heightMap[(i - 1) * size + j];
+                        const dy = heightMap[i * size + j + 1] - heightMap[i * size + j - 1];
+                        slopeMap[i * size + j] = Math.sqrt(dx * dx + dy * dy);
+                    }
+                }
+
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        const idx = i * size + j;
+                        const h = heightMap[idx];
+                        const slope = slopeMap[idx] || 0;
+
+                        if (caveMap && caveMap[idx] === 1) {
+                            typeMap[idx] = 9;
+                            continue;
+                        }
+                        if (h < seaLevel) {
+                            typeMap[idx] = 6;
+                            continue;
+                        }
+                        if (oxbowMap && oxbowMap[idx] === 1) {
+                            typeMap[idx] = 8;
+                            continue;
+                        }
+                        if (floodplainMap && floodplainMap[idx] > 0.5) {
+                            typeMap[idx] = 7;
+                            continue;
+                        }
+                        if (h > 0.4 && slope < 0.025) {
+                            typeMap[idx] = 5;
+                            continue;
+                        }
+                        if (h < 0.15) {
+                            typeMap[idx] = 0;
+                        } else if (h < 0.35) {
+                            typeMap[idx] = 1;
+                        } else if (h < 0.55) {
+                            typeMap[idx] = 2;
+                        } else if (h < 0.75) {
+                            typeMap[idx] = 3;
+                        } else {
+                            typeMap[idx] = 4;
+                        }
+                    }
+                }
+            }
+
+            _normalizeHeightMap() {
+                const { size, heightMap } = this;
+                let min = Infinity,
+                    max = -Infinity;
+                for (let i = 0; i < size * size; i++) {
+                    if (heightMap[i] < min) min = heightMap[i];
+                    if (heightMap[i] > max) max = heightMap[i];
+                }
+                const range = max - min || 1;
+                for (let i = 0; i < size * size; i++) {
+                    heightMap[i] = (heightMap[i] - min) / range;
+                }
+            }
+
+            getResult() {
+                return {
+                    heightMap: this.heightMap,
+                    colorMap: this.colorMap,
+                    riverMap: this.riverMap,
+                    volcanoPositions: this.volcanoPositions,
+                    riverPaths: this.riverPaths,
+                    size: this.size,
+                    tempMap: this.tempMap,
+                    rainMap: this.rainMap,
+                    terrainTypeMap: this.terrainTypeMap,
+                    seaLevel: this.seaLevel,
+                    caveMap: this.caveMap,
+                    cavePositions: this.cavePositions,
+                };
+            }
+
+            getStats() {
+                let riverLen = 0;
+                for (const path of this.riverPaths) riverLen += path.length;
+                return {
+                    vertices: this.size * this.size,
+                    faces: (this.size - 1) * (this.size - 1) * 2,
+                    volcanoes: this.volcanoPositions.length,
+                    rivers: this.riverPaths.length,
+                    riverSegments: riverLen,
+                    caves: this.cavePositions.length,
+                };
+            }
+        }
+
+        // ================================================================
+        //  3D 渲染器 (高密度树木 + 边界分明)
+        // ================================================================
+        class TerrainRenderer {
+            constructor(container) {
+                this.container = container;
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x0b0f1a);
+                this.scene.fog = new THREE.Fog(0x0b0f1a, 200, 800);
+
+                this.camera = new THREE.PerspectiveCamera(85, container.clientWidth / container.clientHeight, 0.1, 1200);
+                this.camera.position.set(0, 30, 60);
+
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+                container.appendChild(this.renderer.domElement);
+
+                this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.08;
+                this.controls.maxPolarAngle = Math.PI / 2.05;
+                this.controls.minDistance = 2;
+                this.controls.maxDistance = 500;
+                this.controls.target.set(0, 5, 0);
+                this.controls.update();
+
+                this.setupLights();
+
+                this.mesh = null;
+                this.seaMesh = null;
+                this.data = null;
+
+                this.treeGroup = null;
+
+                // 漫步
+                this.walkMode = false;
+                this.playerHeight = 0.02;
+                this.euler = new THREE.Euler(0, 0, 0, 'YXZ');
+                this.walkSpeed = 12.0;
+                this.elevationOffset = 0;
+                this.keys = {};
+                this._onKeyDown = this._onKeyDown.bind(this);
+                this._onKeyUp = this._onKeyUp.bind(this);
+                this._onMouseMove = this._onMouseMove.bind(this);
+                this._onPointerLockChange = this._onPointerLockChange.bind(this);
+
+                document.addEventListener('keydown', this._onKeyDown);
+                document.addEventListener('keyup', this._onKeyUp);
+                document.addEventListener('mousemove', this._onMouseMove);
+                document.addEventListener('pointerlockchange', this._onPointerLockChange);
+
+                this.walkHint = document.getElementById('walk-hint');
+
+                // 点击
+                this.raycaster = new THREE.Raycaster();
+                this.pointer = new THREE.Vector2();
+                this.onClick = this.onClick.bind(this);
+                this.renderer.domElement.addEventListener('click', this.onClick);
+
+                window.addEventListener('resize', this.resize.bind(this));
+            }
+
+            setupLights() {
+                const ambient = new THREE.AmbientLight(0x404060, 0.5);
+                this.scene.add(ambient);
+                const sun = new THREE.DirectionalLight(0xffeedd, 2.0);
+                sun.position.set(60, 100, 50);
+                sun.castShadow = true;
+                sun.shadow.mapSize.width = 1024;
+                sun.shadow.mapSize.height = 1024;
+                sun.shadow.camera.near = 0.5;
+                sun.shadow.camera.far = 300;
+                sun.shadow.camera.left = -120;
+                sun.shadow.camera.right = 120;
+                sun.shadow.camera.top = 120;
+                sun.shadow.camera.bottom = -120;
+                this.scene.add(sun);
+                const fill = new THREE.DirectionalLight(0x8888ff, 0.6);
+                fill.position.set(-50, 30, -60);
+                this.scene.add(fill);
+                const back = new THREE.DirectionalLight(0xffaa66, 0.4);
+                back.position.set(-30, 20, 60);
+                this.scene.add(back);
+                const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3a2a1a, 0.8);
+                this.scene.add(hemi);
+            }
+
+            setData(data) {
+                this.data = data;
+                if (data) {
+                    this._heightMap = data.heightMap;
+                    this._size = data.size;
+                    this._spacing = 0.7;
+                    this._heightScale = 25.0;
+                    this._half = data.size / 2;
+                }
+            }
+
+            getTerrainHeight(worldX, worldZ) {
+                if (!this.data) return 0;
+                const { size, heightMap, seaLevel } = this.data;
+                const half = size / 2;
+                const spacing = 0.7;
+                const i = (worldX / spacing) + half;
+                const j = (worldZ / spacing) + half;
+                const i0 = Math.floor(i);
+                const i1 = Math.min(i0 + 1, size - 1);
+                const j0 = Math.floor(j);
+                const j1 = Math.min(j0 + 1, size - 1);
+                const fracI = i - i0;
+                const fracJ = j - j0;
+
+                if (i0 < 0 || i1 >= size || j0 < 0 || j1 >= size) return seaLevel * 25.0;
+
+                const h00 = heightMap[i0 * size + j0];
+                const h10 = heightMap[i1 * size + j0];
+                const h01 = heightMap[i0 * size + j1];
+                const h11 = heightMap[i1 * size + j1];
+
+                const h0 = h00 * (1 - fracI) + h10 * fracI;
+                const h1 = h01 * (1 - fracI) + h11 * fracI;
+                const h = h0 * (1 - fracJ) + h1 * fracJ;
+                return h * 25.0;
+            }
+
+            toggleWalkMode(enabled) {
+                if (enabled) {
+                    if (this.walkMode) return;
+                    this.walkMode = true;
+                    this.controls.enabled = false;
+                    this.renderer.domElement.requestPointerLock();
+
+                    const centerX = 0,
+                        centerZ = 0;
+                    const groundY = this.getTerrainHeight(centerX, centerZ);
+                    const y = isFinite(groundY) ? groundY + this.playerHeight : 0.2;
+                    this.camera.position.set(centerX, y, centerZ);
+                    this.euler.set(0, 0, 0);
+                    this.camera.quaternion.setFromEuler(this.euler);
+
+                    this.walkHint.classList.add('visible');
+                } else {
+                    this.walkMode = false;
+                    this.controls.enabled = true;
+                    document.exitPointerLock();
+                    this.walkHint.classList.remove('visible');
+                    this.controls.target.set(0, 5, 0);
+                    this.controls.update();
+                }
+            }
+
+            _onPointerLockChange() {
+                const isLocked = document.pointerLockElement === this.renderer.domElement;
+                if (!isLocked && this.walkMode) {
+                    this.walkMode = false;
+                    this.controls.enabled = true;
+                    this.walkHint.classList.remove('visible');
+                    const cb = document.getElementById('walk-mode');
+                    if (cb) cb.checked = false;
+                    this.controls.target.set(0, 5, 0);
+                    this.controls.update();
+                }
+            }
+
+            _onKeyDown(e) {
+                this.keys[e.code] = true;
+                if (this.walkMode) {
+                    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
+                        e.preventDefault();
+                    }
+                    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                        this.elevationOffset = 0.5;
+                    }
+                }
+            }
+
+            _onKeyUp(e) {
+                this.keys[e.code] = false;
+                if (this.walkMode) {
+                    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                        this.elevationOffset = 0;
+                    }
+                }
+            }
+
+            _onMouseMove(e) {
+                if (document.pointerLockElement === this.renderer.domElement && this.walkMode) {
+                    const sensitivity = 0.002;
+                    this.euler.y -= e.movementX * sensitivity;
+                    this.euler.x -= e.movementY * sensitivity;
+                    this.euler.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.euler.x));
+                    this.camera.quaternion.setFromEuler(this.euler);
+                }
+            }
+
+            updateWalk(delta) {
+                if (!this.walkMode || !this.data) return;
+
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+                forward.y = 0;
+                forward.normalize();
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
+                right.y = 0;
+                right.normalize();
+
+                const speed = this.walkSpeed * delta;
+                let moveVec = new THREE.Vector3(0, 0, 0);
+                if (this.keys['KeyW']) moveVec.add(forward);
+                if (this.keys['KeyS']) moveVec.sub(forward);
+                if (this.keys['KeyA']) moveVec.sub(right);
+                if (this.keys['KeyD']) moveVec.add(right);
+                if (moveVec.length() > 0) {
+                    moveVec.normalize().multiplyScalar(speed);
+                    this.camera.position.x += moveVec.x;
+                    this.camera.position.z += moveVec.z;
+                    const height = this.getTerrainHeight(this.camera.position.x, this.camera.position.z);
+                    const targetY = Math.max(height, 0) + this.playerHeight + this.elevationOffset;
+                    this.camera.position.y = targetY;
+                }
+
+                if (this.keys['Space']) {
+                    this.camera.position.y += 0.05;
+                }
+            }
+
+            onClick(event) {
+                if (!this.mesh || !this.data) return;
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                this.raycaster.setFromCamera(this.pointer, this.camera);
+                const intersects = this.raycaster.intersectObject(this.mesh);
+
+                if (intersects.length > 0) {
+                    const intersect = intersects[0];
+                    const uv = intersect.uv;
+                    if (!uv) return;
+                    const size = this.data.size;
+                    let i = Math.floor(uv.x * size);
+                    let j = Math.floor(uv.y * size);
+                    i = Math.max(0, Math.min(size - 1, i));
+                    j = Math.max(0, Math.min(size - 1, j));
+                    const idx = i * size + j;
+
+                    const height = this.data.heightMap[idx];
+                    const temp = this.data.tempMap ? this.data.tempMap[idx] : 0;
+                    const rain = this.data.rainMap ? this.data.rainMap[idx] : 0;
+                    let type = this.data.terrainTypeMap ? this.data.terrainTypeMap[idx] : 0;
+
+                    const r = this.data.colorMap[idx * 3];
+                    const g = this.data.colorMap[idx * 3 + 1];
+                    const b = this.data.colorMap[idx * 3 + 2];
+
+                    let geoDesc = '未知';
+                    if (type === 9) geoDesc = '🕳️ 洞穴';
+                    else if (type === 6) geoDesc = '🌊 海洋';
+                    else if (type === 8) geoDesc = '🌀 牛轭湖';
+                    else if (type === 7) geoDesc = '🌾 冲积平原';
+                    else if (r > 0.6 && g < 0.4 && b < 0.2) geoDesc = '🔥 熔岩';
+                    else if (r > 0.5 && g > 0.4 && b > 0.5) geoDesc = '❄️ 雪峰';
+                    else if (r > 0.3 && g > 0.5 && b < 0.3) geoDesc = '🌲 森林';
+                    else if (r > 0.4 && g > 0.4 && b < 0.2) geoDesc = '🌾 草地';
+                    else if (r > 0.5 && g > 0.3 && b < 0.2) geoDesc = '🏜️ 干旱';
+                    else if (r < 0.2 && g < 0.3 && b > 0.4) geoDesc = '🌊 水域';
+                    else if (r > 0.5 && g > 0.3 && b > 0.2) geoDesc = '⛰️ 山地';
+                    else geoDesc = '🌍 混合';
+
+                    const typeNames = ['平原', '丘陵', '高地', '山川', '山脉', '高原', '海洋', '冲积平原', '牛轭湖', '洞穴'];
+                    const terrainName = type < typeNames.length ? typeNames[type] : '未知';
+
+                    document.getElementById('info-height').textContent = (height * 25.0).toFixed(2) + 'm';
+                    document.getElementById('info-temp').textContent = (temp * 40 - 5).toFixed(1) + '°C';
+                    document.getElementById('info-rain').textContent = (rain * 100).toFixed(0) + '%';
+                    document.getElementById('info-terrain').textContent = terrainName;
+                    document.getElementById('info-geo').textContent = geoDesc;
+
+                    document.querySelector('#info-display .info-placeholder').style.display = 'none';
+                    document.querySelector('#info-display .info-grid').style.display = 'grid';
+                }
+            }
+
+            // ---- 智能树木生成 (高密度 + 边界分明) ----
+            generateTrees(data, density) {
+                if (this.treeGroup) {
+                    this.scene.remove(this.treeGroup);
+                    this.treeGroup.traverse(child => {
+                        if (child.isMesh) {
+                            child.geometry.dispose();
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => m.dispose());
+                            } else {
+                                child.material.dispose();
+                            }
+                        }
+                    });
+                    this.treeGroup = null;
+                }
+
+                if (density <= 0) return;
+
+                const { heightMap, colorMap, size, riverMap, caveMap, terrainTypeMap, seaLevel } = data;
+                if (!heightMap) return;
+
+                // 步长随密度变化，密度越高步长越小
+                const step = Math.max(1, Math.floor(4 / (density + 0.1))); // 密度1.2时步长约3.07，取整3
+                const treeGroup = new THREE.Group();
+                let count = 0;
+
+                const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.8 });
+                const pineMat = new THREE.MeshStandardMaterial({ color: 0x2E8B57, roughness: 0.6 });
+                const broadMat = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.6 });
+
+                // 地形类型权重：森林区极高，其他区域极低，形成鲜明边界
+                const typeWeights = [
+                    0.05, // 平原
+                    1.5,  // 丘陵 (森林)
+                    1.5,  // 高地 (森林)
+                    1.2,  // 山川
+                    0.2,  // 山脉
+                    0.05, // 高原
+                    0,    // 海洋
+                    0.05, // 冲积平原
+                    0,    // 牛轭湖
+                    0     // 洞穴
+                ];
+
+                for (let i = 0; i < size; i += step) {
+                    for (let j = 0; j < size; j += step) {
+                        const idx = i * size + j;
+                        const h = heightMap[idx];
+                        if (h < seaLevel || riverMap[idx] === 1) continue;
+                        if (caveMap && caveMap[idx] === 1) continue;
+                        let slope = 0;
+                        if (i > 0 && i < size - 1 && j > 0 && j < size - 1) {
+                            const dx = heightMap[(i + 1) * size + j] - heightMap[(i - 1) * size + j];
+                            const dy = heightMap[i * size + j + 1] - heightMap[i * size + j - 1];
+                            slope = Math.sqrt(dx * dx + dy * dy);
+                        }
+                        if (slope > 0.05) continue;
+
+                        const type = terrainTypeMap ? terrainTypeMap[idx] : 0;
+                        const weight = typeWeights[type] || 0;
+                        if (weight === 0) continue;
+
+                        // 最终密度 = 全局密度 * 类型权重，但限制最大1.0
+                        let finalDensity = density * weight;
+                        if (finalDensity > 1.0) finalDensity = 1.0;
+                        if (Math.random() > finalDensity) continue;
+
+                        const treeHeight = 0.3 + Math.random() * 0.6;
+                        const isPine = Math.random() > 0.4;
+
+                        const tree = new THREE.Group();
+
+                        const trunkGeo = new THREE.CylinderGeometry(0.04 * treeHeight, 0.06 * treeHeight, 0.3 * treeHeight,
+                            4);
+                        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                        trunk.position.y = 0.15 * treeHeight;
+                        tree.add(trunk);
+
+                        let crown;
+                        if (isPine) {
+                            crown = new THREE.Mesh(
+                                new THREE.ConeGeometry(0.3 * treeHeight, 0.6 * treeHeight, 5),
+                                pineMat
+                            );
+                            crown.position.y = 0.3 * treeHeight + 0.3 * treeHeight * 0.5;
+                        } else {
+                            crown = new THREE.Mesh(
+                                new THREE.SphereGeometry(0.25 * treeHeight, 5, 5),
+                                broadMat
+                            );
+                            crown.position.y = 0.3 * treeHeight + 0.25 * treeHeight;
+                        }
+                        tree.add(crown);
+
+                        const half = size / 2;
+                        const spacing = 0.7;
+                        const x = (i - half) * spacing;
+                        const z = (j - half) * spacing;
+                        const y = h * 25.0;
+                        tree.position.set(x, y, z);
+                        tree.rotation.y = Math.random() * Math.PI * 2;
+                        const scale = 0.7 + Math.random() * 0.6;
+                        tree.scale.set(scale, scale, scale);
+
+                        treeGroup.add(tree);
+                        count++;
+                    }
+                }
+
+                if (count > 8000) {
+                    while (treeGroup.children.length > 8000) {
+                        const idx = Math.floor(Math.random() * treeGroup.children.length);
+                        const child = treeGroup.children[idx];
+                        treeGroup.remove(child);
+                    }
+                }
+
+                this.treeGroup = treeGroup;
+                this.scene.add(treeGroup);
+                console.log(`🌳 生成树木 ${treeGroup.children.length} 棵`);
+            }
+
+            buildTerrain(data, treeDensity = 0.8) {
+                const { heightMap, colorMap, size, seaLevel } = data;
+                const geometry = new THREE.BufferGeometry();
+                const vertices = new Float32Array(size * size * 3);
+                const colors = new Float32Array(size * size * 3);
+                const indices = [];
+                const uvs = new Float32Array(size * size * 2);
+
+                const half = size / 2;
+                const spacing = 0.7;
+                const heightScale = 25.0;
+
+                let idx = 0;
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        const h = heightMap[i * size + j];
+                        const x = (i - half) * spacing;
+                        const z = (j - half) * spacing;
+                        const y = h * heightScale;
+                        vertices[idx * 3] = x;
+                        vertices[idx * 3 + 1] = y;
+                        vertices[idx * 3 + 2] = z;
+                        const ci = i * size + j;
+                        colors[idx * 3] = colorMap[ci * 3];
+                        colors[idx * 3 + 1] = colorMap[ci * 3 + 1];
+                        colors[idx * 3 + 2] = colorMap[ci * 3 + 2];
+                        uvs[idx * 2] = i / size;
+                        uvs[idx * 2 + 1] = j / size;
+                        idx++;
+                    }
+                }
+
+                for (let i = 0; i < size - 1; i++) {
+                    for (let j = 0; j < size - 1; j++) {
+                        const a = i * size + j;
+                        const b = (i + 1) * size + j;
+                        const c = i * size + (j + 1);
+                        const d = (i + 1) * size + (j + 1);
+                        indices.push(a, b, c);
+                        indices.push(b, d, c);
+                    }
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+                geometry.setIndex(indices);
+                geometry.computeVertexNormals();
+
+                const material = new THREE.MeshStandardMaterial({
+                    vertexColors: true,
+                    roughness: 0.6,
+                    metalness: 0.05,
+                    flatShading: false,
+                    side: THREE.DoubleSide,
+                    envMapIntensity: 0.2,
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+
+                if (this.mesh) {
+                    this.scene.remove(this.mesh);
+                    this.mesh.geometry.dispose();
+                    this.mesh.material.dispose();
+                }
+                this.mesh = mesh;
+                this.scene.add(mesh);
+
+                this.updateSea(seaLevel, size, spacing, heightScale);
+
+                this.controls.target.set(0, 5, 0);
+                this.controls.update();
+                this.setData(data);
+
+                this.generateTrees(data, treeDensity);
+
+                if (this.walkMode) {
+                    const pos = this.camera.position.clone();
+                    const h = this.getTerrainHeight(pos.x, pos.z);
+                    pos.y = h + this.playerHeight;
+                    this.camera.position.copy(pos);
+                }
+
+                return mesh;
+            }
+
+            updateSea(seaLevel, size, spacing, heightScale) {
+                if (this.seaMesh) {
+                    this.scene.remove(this.seaMesh);
+                    this.seaMesh.geometry.dispose();
+                    this.seaMesh.material.dispose();
+                    this.seaMesh = null;
+                }
+
+                const half = size / 2;
+                const extent = half * spacing;
+                const y = seaLevel * heightScale;
+
+                const geo = new THREE.PlaneGeometry(extent * 2.1, extent * 2.1);
+                const mat = new THREE.MeshStandardMaterial({
+                    color: 0x1a5276,
+                    transparent: true,
+                    opacity: 0.55,
+                    roughness: 0.3,
+                    metalness: 0.1,
+                    side: THREE.DoubleSide,
+                    envMapIntensity: 0.3,
+                });
+                const sea = new THREE.Mesh(geo, mat);
+                sea.rotation.x = -Math.PI / 2;
+                sea.position.set(0, y, 0);
+                sea.receiveShadow = true;
+                this.scene.add(sea);
+                this.seaMesh = sea;
+            }
+
+            addStars() {
+                const starsGeo = new THREE.BufferGeometry();
+                const count = 4000;
+                const positions = new Float32Array(count * 3);
+                for (let i = 0; i < count * 3; i++) {
+                    positions[i] = (Math.random() - 0.5) * 800;
+                }
+                starsGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const starsMat = new THREE.PointsMaterial({
+                    color: 0xffffff,
+                    size: 0.1,
+                    transparent: true,
+                    opacity: 0.6,
+                });
+                const stars = new THREE.Points(starsGeo, starsMat);
+                this.scene.add(stars);
+            }
+
+            resize() {
+                const w = this.container.clientWidth;
+                const h = this.container.clientHeight;
+                this.camera.aspect = w / h;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(w, h);
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                const delta = 0.016;
+                if (this.walkMode) {
+                    this.updateWalk(delta);
+                } else {
+                    this.controls.update();
+                }
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            dispose() {
+                document.removeEventListener('keydown', this._onKeyDown);
+                document.removeEventListener('keyup', this._onKeyUp);
+                document.removeEventListener('mousemove', this._onMouseMove);
+                document.removeEventListener('pointerlockchange', this._onPointerLockChange);
+            }
+        }
+
+        // ================================================================
+        //  主程序
+        // ================================================================
+        const container = document.getElementById('canvas-container');
+        const loading = document.getElementById('loading');
+
+        const renderer = new TerrainRenderer(container);
+        renderer.addStars();
+
+        const generator = new TerrainGenerator(300);
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function generateAndDisplay(params) {
+            loading.classList.remove('hidden');
+            const stepDisplay = document.getElementById('step-display');
+            const stepIcon = stepDisplay.querySelector('.step-icon');
+            const stepText = stepDisplay.querySelector('.step-text');
+            const stepProgress = stepDisplay.querySelector('.step-progress');
+
+            function updateStep(icon, text, progress) {
+                stepIcon.textContent = icon;
+                stepText.textContent = text;
+                stepProgress.textContent = progress || '';
+            }
+
+            updateStep('⏳', '准备生成...', '');
+            await sleep(20);
+
+            try {
+                generator.setParams(params);
+
+                updateStep('🔊', '1/9: 生成基础噪声地形', '');
+                await sleep(20);
+                generator.generateHeightmap();
+
+                updateStep('⛰️', '2/9: 模拟板块挤压', '');
+                await sleep(20);
+                generator.applyPlateTectonics();
+
+                updateStep('🌋', '3/9: 火山爆发造山', '');
+                await sleep(20);
+                generator.addVolcanoes();
+
+                updateStep('🌡️', '4/9: 计算温度分布', '');
+                await sleep(20);
+                generator.computeTemperature();
+
+                updateStep('🌧️', '5/9: 计算降雨分布', '');
+                await sleep(20);
+                generator.computeRainfall();
+
+                updateStep('🌊', '6/9: 生成超长河流', '');
+                await sleep(20);
+                generator.simulateRivers();
+
+                updateStep('🕳️', '7/9: 生成洞穴系统', '');
+                await sleep(20);
+                generator.generateCaves();
+
+                updateStep('🔄', '8/9: 更新温度与降雨', '');
+                await sleep(20);
+                generator.computeTemperature();
+                generator.computeRainfall();
+
+                updateStep('🎨', '9/9: 生成颜色与地形类型', '');
+                await sleep(20);
+                generator.generateColors();
+                generator.computeTerrainTypes();
+
+                const data = generator.getResult();
+                const treeDensity = params.treeDensity || 0.8;
+                renderer.buildTerrain(data, treeDensity);
+
+                const stats = generator.getStats();
+                document.getElementById('stat-vertices').textContent = `顶点: ${stats.vertices}`;
+                document.getElementById('stat-faces').textContent = `面: ${stats.faces}`;
+                document.getElementById('stat-volcanoes').textContent = `火山: ${stats.volcanoes}`;
+                document.getElementById('stat-rivers').textContent = `河流: ${stats.rivers}`;
+                document.getElementById('stat-caves').textContent = `洞穴: ${stats.caves}`;
+
+                updateStep('✅', '生成完成！', '');
+                loading.classList.add('hidden');
+
+            } catch (err) {
+                console.error(err);
+                updateStep('❌', '生成出错，请重试', '');
+                loading.classList.add('hidden');
+            }
+        }
+
+        // ---- UI 绑定 ----
+        function setupUI() {
+            const sliders = {
+                seed: { el: document.getElementById('seed'), display: document.getElementById('seed-val') },
+                amplitude: { el: document.getElementById('amplitude'), display: document.getElementById('amp-val') },
+                frequency: { el: document.getElementById('frequency'), display: document.getElementById('freq-val') },
+                plateStrength: { el: document.getElementById('plate-strength'), display: document.getElementById(
+                        'plate-val') },
+                seaLevel: { el: document.getElementById('sea-level'), display: document.getElementById('sealevel-val') },
+                volcanoes: { el: document.getElementById('volcanoes'), display: document.getElementById('volc-val') },
+                volcanoStrength: { el: document.getElementById('volcano-strength'), display: document.getElementById(
+                        'volc-str-val') },
+                temperature: { el: document.getElementById('temperature'), display: document.getElementById('temp-val') },
+                rainfall: { el: document.getElementById('rainfall'), display: document.getElementById('rain-val') },
+                rivers: { el: document.getElementById('rivers'), display: document.getElementById('river-val') },
+                meander: { el: document.getElementById('meander-strength'), display: document.getElementById(
+                        'meander-val') },
+                riverVolume: { el: document.getElementById('river-volume'), display: document.getElementById('volume-val') },
+                caveCount: { el: document.getElementById('cave-count'), display: document.getElementById('cave-count-val') },
+                caveSize: { el: document.getElementById('cave-size'), display: document.getElementById('cave-size-val') },
+                treeDensity: { el: document.getElementById('tree-density'), display: document.getElementById(
+                        'tree-density-val') },
+            };
+
+            const giantCheckbox = document.getElementById('giant-mode');
+            const walkCheckbox = document.getElementById('walk-mode');
+
+            walkCheckbox.addEventListener('change', () => {
+                const enabled = walkCheckbox.checked;
+                renderer.toggleWalkMode(enabled);
+                if (enabled) {
+                    renderer.renderer.domElement.focus();
+                }
+            });
+
+            document.addEventListener('pointerlockchange', () => {
+                const isLocked = document.pointerLockElement === renderer.renderer.domElement;
+                if (!isLocked && walkCheckbox.checked) {
+                    walkCheckbox.checked = false;
+                    renderer.toggleWalkMode(false);
+                }
+            });
+
+            function getParams() {
+                return {
+                    seed: parseFloat(sliders.seed.el.value),
+                    amplitude: parseFloat(sliders.amplitude.el.value),
+                    frequency: parseFloat(sliders.frequency.el.value),
+                    plateStrength: parseFloat(sliders.plateStrength.el.value),
+                    seaLevel: parseFloat(sliders.seaLevel.el.value),
+                    volcanoCount: parseInt(sliders.volcanoes.el.value),
+                    volcanoStrength: parseFloat(sliders.volcanoStrength.el.value),
+                    temperatureOffset: parseFloat(sliders.temperature.el.value),
+                    rainfall: parseFloat(sliders.rainfall.el.value),
+                    riverCount: parseInt(sliders.rivers.el.value),
+                    meanderStrength: parseFloat(sliders.meander.el.value),
+                    riverVolume: parseFloat(sliders.riverVolume.el.value),
+                    giantMode: giantCheckbox.checked,
+                    caveCount: parseInt(sliders.caveCount.el.value),
+                    caveSize: parseFloat(sliders.caveSize.el.value),
+                    treeDensity: parseFloat(sliders.treeDensity.el.value),
+                };
+            }
+
+            function updateDisplays() {
+                for (const key of Object.keys(sliders)) {
+                    const { el, display } = sliders[key];
+                    if (display) {
+                        const val = parseFloat(el.value);
+                        display.textContent = Number.isInteger(val) ? val : val.toFixed(2);
+                    }
+                }
+            }
+
+            for (const key of Object.keys(sliders)) {
+                const { el } = sliders[key];
+                el.addEventListener('input', updateDisplays);
+            }
+
+            document.getElementById('generate-btn').addEventListener('click', () => {
+                const params = getParams();
+                const stepDisplay = document.getElementById('step-display');
+                stepDisplay.querySelector('.step-icon').textContent = '⏳';
+                stepDisplay.querySelector('.step-text').textContent = '开始生成...';
+                stepDisplay.querySelector('.step-progress').textContent = '';
+                if (walkCheckbox.checked) {
+                    walkCheckbox.checked = false;
+                    renderer.toggleWalkMode(false);
+                }
+                generateAndDisplay(params);
+            });
+
+            updateDisplays();
+            const initialParams = getParams();
+            generateAndDisplay(initialParams);
+
+            document.addEventListener('keydown', (e) => {
+                if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey) {
+                    document.getElementById('generate-btn').click();
+                }
+            });
+        }
+
+        setupUI();
+        renderer.animate();
+
+        setTimeout(() => {
+            loading.classList.add('hidden');
+        }, 1500);
+
+        console.log('🌍 3D 自然地图生成器 · 高密度森林，边界分明');
+        console.log('💡 丘陵和高地区域树木茂密，平原稀疏，过渡清晰');
+    </script>
+</body>
+</html>
