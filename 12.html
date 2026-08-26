@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字算式求解器 - 支持下一个解</title>
+    <style>
+        :root {
+            --primary: #5b6abf;
+            --primary-dark: #4a55a0;
+            --primary-light: #eef0fa;
+            --success: #3d9a6b;
+            --error: #d45b5b;
+            --warning: #d49b3d;
+            --text: #2d2d3a;
+            --text-secondary: #6b6b7a;
+            --bg: #f7f8fc;
+            --card-bg: #ffffff;
+            --border: #e4e6ef;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 720px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 36px 32px;
+            border: 1px solid var(--border);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .header .icon {
+            font-size: 42px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--text);
+        }
+
+        .header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-group label .badge {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            background: var(--primary-light);
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .form-group input {
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 16px;
+            outline: none;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            background: #fafbfe;
+            color: var(--text);
+            font-family: inherit;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(91, 106, 191, 0.12);
+            background: #fff;
+        }
+
+        .form-group input::placeholder {
+            color: #b0b3c5;
+            font-size: 14px;
+        }
+
+        .form-group input.error {
+            border-color: var(--error);
+            box-shadow: 0 0 0 4px rgba(212, 91, 91, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background var(--transition), transform 0.1s ease;
+            letter-spacing: 0.3px;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background: #c5c8d8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.stop-btn {
+            background: var(--error);
+            flex: 0 0 auto;
+            min-width: 140px;
+        }
+
+        .btn.stop-btn:hover {
+            background: #b84747;
+        }
+
+        .btn.next-btn {
+            background: var(--warning);
+            flex: 1 1 auto;
+        }
+
+        .btn.next-btn:hover {
+            background: #b8822a;
+        }
+
+        .btn .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .btn.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .result-section {
+            margin-top: 24px;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition);
+            min-height: 60px;
+        }
+
+        .result-card {
+            background: var(--primary-light);
+            border: 2px solid #d5daf0;
+            border-radius: var(--radius-sm);
+            padding: 20px 22px;
+            text-align: center;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .result-card.success {
+            background: #f0f9f4;
+            border-color: #b5e0c8;
+        }
+
+        .result-card.no-result {
+            background: #fdf5f5;
+            border-color: #f0c8c8;
+        }
+
+        .result-card.searching {
+            background: #fffbf0;
+            border-color: #f0e0b5;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-label {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .result-formula {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            word-break: break-all;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .result-formula .equals {
+            color: var(--primary);
+            margin: 0 4px;
+        }
+
+        .result-detail {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .result-message {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .result-message .highlight {
+            font-weight: 700;
+            color: var(--error);
+        }
+
+        .history-section {
+            margin-top: 20px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .history-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: #fafbfe;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-item .h-formula {
+            font-weight: 600;
+            color: var(--text);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px;
+        }
+
+        .history-item .h-count {
+            font-size: 11px;
+            background: var(--primary-light);
+            padding: 2px 6px;
+            border-radius: 10px;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+
+        .tips {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #9a9db0;
+            background: #fafbfe;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px dashed var(--border);
+            line-height: 1.7;
+        }
+
+        .tips strong {
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 24px 18px;
+                border-radius: 12px;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+            .result-formula {
+                font-size: 22px;
+            }
+            .form-group input {
+                font-size: 15px;
+                padding: 10px 14px;
+            }
+            .btn {
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+            .btn.stop-btn {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="icon">🧮</span>
+            <h1>数字算式求解器</h1>
+            <p>输入数字和目标结果，自动寻找最短的四则运算算式</p>
+        </div>
+
+        <div class="input-section">
+            <div class="form-group">
+                <label>输入数字 <span class="badge">用逗号分隔，每个数字至少使用一次</span></label>
+                <input type="text" id="numbersInput" placeholder="例如：1, 2, 3, 4" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>预期结果</label>
+                <input type="text" id="targetInput" placeholder="例如：24" autocomplete="off">
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="solveBtn" onclick="solve()">
+                    <span class="btn-text">🔍 寻找最短算式</span>
+                    <span class="spinner"></span>
+                </button>
+                <button class="btn next-btn" id="nextBtn" onclick="nextSolution()" style="display: none;" disabled>
+                    <span class="btn-text">⏩ 下一个解</span>
+                    <span class="spinner"></span>
+                </button>
+                <button class="btn stop-btn" id="stopBtn" onclick="stopSearchHandler()" style="display: none;">
+                    ⏹️ 停止搜索
+                </button>
+            </div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <!-- 结果会显示在这里 -->
+        </div>
+
+        <div class="history-section" id="historySection" style="display:none;">
+            <div class="history-title">📋 最近求解</div>
+            <div class="history-list" id="historyList"></div>
+        </div>
+
+        <div class="tips">
+            <strong>💡 使用说明：</strong><br>
+            • 每个输入的数字都<b>必须至少使用一次</b>，可以<b>重复使用</b>数字<br>
+            • 程序会从少到多尝试不同数量的数字，优先找到<b>使用数字最少</b>的算式<br>
+            • 找到第一个解后，可以点击 <b>“下一个解”</b> 继续探索其他解<br>
+            • 支持 <b>+ − × ÷</b> 四则运算，支持小数和负数<br>
+            • 搜索过程中可随时点击 <b>“停止搜索”</b> 中断<br>
+            • 示例：输入 1,2,3,4 目标 24 → 可能得到 (1+2+3)×4=24
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局停止标志 ====================
+        let stopSearch = false;
+        // ==================== 当前搜索状态 ====================
+        let currentSearch = null;
+
+        // ==================== 有理数（分数）类 ====================
+        class Fraction {
+            constructor(num, den = 1) {
+                if (den === 0) throw new Error('Denominator cannot be zero');
+                if (den < 0) { num = -num; den = -den; }
+                if (!Number.isInteger(num) || !Number.isInteger(den)) {
+                    const f = Fraction.fromDecimal(num / den);
+                    this.num = f.num;
+                    this.den = f.den;
+                    return;
+                }
+                const g = Fraction.gcd(Math.abs(num), Math.abs(den));
+                this.num = num / g;
+                this.den = den / g;
+            }
+
+            static gcd(a, b) {
+                while (b !== 0) { [a, b] = [b, a % b]; }
+                return a;
+            }
+
+            static fromDecimal(decimal) {
+                if (Number.isInteger(decimal)) {
+                    return new Fraction(decimal, 1);
+                }
+                const str = decimal.toString();
+                const parts = str.split('.');
+                if (parts.length === 1) {
+                    return new Fraction(parseInt(parts[0]), 1);
+                }
+                const intPart = parts[0];
+                const decPart = parts[1];
+                const den = Math.pow(10, decPart.length);
+                const absInt = Math.abs(parseInt(intPart));
+                const num = absInt * den + parseInt(decPart);
+                const sign = intPart.startsWith('-') ? -1 : 1;
+                return new Fraction(sign * num, den);
+            }
+
+            add(other) {
+                return new Fraction(this.num * other.den + other.num * this.den, this.den * other.den);
+            }
+            sub(other) {
+                return new Fraction(this.num * other.den - other.num * this.den, this.den * other.den);
+            }
+            mul(other) {
+                return new Fraction(this.num * other.num, this.den * other.den);
+            }
+            div(other) {
+                if (other.num === 0) return null;
+                return new Fraction(this.num * other.den, this.den * other.num);
+            }
+            isZero() {
+                return this.num === 0;
+            }
+            equals(other) {
+                return this.num === other.num && this.den === other.den;
+            }
+            toNumber() {
+                return this.num / this.den;
+            }
+            approxEquals(other, epsilon = 1e-9) {
+                return Math.abs(this.toNumber() - other.toNumber()) < epsilon;
+            }
+            toString() {
+                return this.den === 1 ? `${this.num}` : `${this.num}/${this.den}`;
+            }
+            clone() {
+                return new Fraction(this.num, this.den);
+            }
+        }
+
+        // ==================== 表达式对象 ====================
+        function createLeaf(value, str) {
+            return { value: value, str: str, count: 1 };
+        }
+
+        function createExpr(value, str, count) {
+            return { value: value, str: str, count: count };
+        }
+
+        // ==================== 解析用户输入 ====================
+        function parseNumbersInput(input) {
+            const trimmed = input.trim();
+            if (!trimmed) return null;
+            const parts = trimmed.split(/[,，\s]+/).filter(s => s.length > 0);
+            const numbers = [];
+            for (const part of parts) {
+                const num = Number(part);
+                if (isNaN(num) || part === '') {
+                    return null;
+                }
+                numbers.push(num);
+            }
+            if (numbers.length < 1) return null;
+            return numbers;
+        }
+
+        function parseTargetInput(input) {
+            const trimmed = input.trim();
+            if (!trimmed) return null;
+            const num = Number(trimmed);
+            if (isNaN(num)) return null;
+            return num;
+        }
+
+        // ==================== 清理公式（去除最外层括号） ====================
+        function cleanFormula(formula) {
+            if (formula.startsWith('(') && formula.endsWith(')')) {
+                let depth = 0;
+                let canRemove = true;
+                for (let i = 0; i < formula.length; i++) {
+                    if (formula[i] === '(') depth++;
+                    else if (formula[i] === ')') {
+                        depth--;
+                        if (depth === 0 && i < formula.length - 1) {
+                            canRemove = false;
+                            break;
+                        }
+                    }
+                }
+                if (canRemove && depth === 0) {
+                    formula = formula.slice(1, -1);
+                }
+            }
+            return formula;
+        }
+
+        // ==================== 生成多重集 ====================
+        function generateMultisets(inputNumbers, totalCount) {
+            if (stopSearch) return [];
+            const n = inputNumbers.length;
+            const extraCount = totalCount - n;
+            if (extraCount < 0) return [];
+
+            const results = [];
+            const seen = new Set();
+
+            function generate(extraRemaining, currentMultiset, startIndex) {
+                if (stopSearch) return;
+                if (extraRemaining === 0) {
+                    const sorted = [...currentMultiset].sort((a, b) => a - b);
+                    const key = sorted.join(',');
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        results.push([...currentMultiset]);
+                    }
+                    return;
+                }
+                for (let i = startIndex; i < inputNumbers.length; i++) {
+                    if (stopSearch) return;
+                    currentMultiset.push(inputNumbers[i]);
+                    generate(extraRemaining - 1, currentMultiset, i);
+                    currentMultiset.pop();
+                }
+            }
+
+            generate(extraCount, [...inputNumbers], 0);
+            return results;
+        }
+
+        // ==================== 表达式搜索（支持排除集合） ====================
+        function searchExpressions(exprs, target, memo, excludeSet) {
+            if (stopSearch) return null;
+            if (exprs.length === 1) {
+                if (exprs[0].value.approxEquals(target)) {
+                    const cleaned = cleanFormula(exprs[0].str);
+                    if (excludeSet && excludeSet.has(cleaned)) {
+                        return null; // 该解已被排除，继续搜索其他解
+                    }
+                    return exprs[0];
+                }
+                return null;
+            }
+
+            const sortedValues = exprs.map(e => e.value.toString()).sort().join(',');
+            const memoKey = sortedValues;
+            if (memo.has(memoKey)) {
+                return null;
+            }
+
+            const n = exprs.length;
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    if (i === j) continue;
+                    if (stopSearch) return null;
+                    const a = exprs[i];
+                    const b = exprs[j];
+                    const remaining = exprs.filter((_, idx) => idx !== i && idx !== j);
+
+                    const operations = [];
+
+                    if (i < j) {
+                        operations.push({
+                            result: a.value.add(b.value),
+                            str: `(${a.str}+${b.str})`,
+                        });
+                    }
+
+                    operations.push({
+                        result: a.value.sub(b.value),
+                        str: `(${a.str}-${b.str})`,
+                    });
+
+                    if (i < j) {
+                        operations.push({
+                            result: a.value.mul(b.value),
+                            str: `(${a.str}×${b.str})`,
+                        });
+                    }
+
+                    if (!b.value.isZero()) {
+                        const divResult = a.value.div(b.value);
+                        if (divResult) {
+                            operations.push({
+                                result: divResult,
+                                str: `(${a.str}÷${b.str})`,
+                            });
+                        }
+                    }
+
+                    for (const op of operations) {
+                        if (stopSearch) return null;
+                        const newExpr = createExpr(op.result, op.str, a.count + b.count);
+                        const newExprs = [...remaining, newExpr];
+                        const solution = searchExpressions(newExprs, target, memo, excludeSet);
+                        if (solution) {
+                            return solution;
+                        }
+                    }
+                }
+            }
+
+            memo.add(memoKey);
+            return null;
+        }
+
+        // ==================== 搜索指定数字总数的解（支持排除集合） ====================
+        function searchWithTotalCount(inputNumbers, targetFraction, totalCount, excludeSet) {
+            const n = inputNumbers.length;
+            const extra = totalCount - n;
+            if (extra < 0 || stopSearch) return null;
+
+            const multisets = generateMultisets(inputNumbers, totalCount);
+            if (multisets.length === 0) return null;
+
+            let bestSolution = null;
+            let bestStrLength = Infinity;
+
+            for (const multiset of multisets) {
+                if (stopSearch) return null;
+                const leafExprs = multiset.map(num => {
+                    const frac = Fraction.fromDecimal(num);
+                    const str = num.toString();
+                    return createLeaf(frac, str);
+                });
+                const memo = new Set();
+                const solution = searchExpressions(leafExprs, targetFraction, memo, excludeSet);
+                if (solution) {
+                    const cleaned = cleanFormula(solution.str);
+                    if (excludeSet && excludeSet.has(cleaned)) {
+                        // 理论上不会发生，因为 searchExpressions 已排除，但双重检查
+                        continue;
+                    }
+                    const strLen = cleaned.length;
+                    if (strLen < bestStrLength) {
+                        bestStrLength = strLen;
+                        bestSolution = solution;
+                    }
+                }
+            }
+
+            if (bestSolution) {
+                const formula = cleanFormula(bestSolution.str);
+                return {
+                    formula: formula,
+                    usedCount: totalCount,
+                    extraUsed: extra,
+                    exactValue: bestSolution.value,
+                };
+            }
+            return null;
+        }
+
+        // ==================== UI 交互 ====================
+        const history = [];
+
+        function stopSearchHandler() {
+            stopSearch = true;
+        }
+
+        function setButtons(searching, hasResult) {
+            const solveBtn = document.getElementById('solveBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            if (searching) {
+                solveBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                stopBtn.style.display = 'flex';
+                stopBtn.disabled = false;
+            } else {
+                solveBtn.style.display = 'flex';
+                stopBtn.style.display = 'none';
+                nextBtn.style.display = hasResult ? 'flex' : 'none';
+                nextBtn.disabled = !hasResult;
+            }
+        }
+
+        async function solve() {
+            const numbersInput = document.getElementById('numbersInput');
+            const targetInput = document.getElementById('targetInput');
+            const resultSection = document.getElementById('resultSection');
+
+            const numbers = parseNumbersInput(numbersInput.value);
+            const target = parseTargetInput(targetInput.value);
+
+            if (numbers === null) {
+                numbersInput.classList.add('error');
+                resultSection.innerHTML = `
+                    <div class="result-card no-result">
+                        <div class="result-message">⚠️ 请正确输入数字（用逗号分隔）</div>
+                    </div>`;
+                setButtons(false, false);
+                return;
+            } else {
+                numbersInput.classList.remove('error');
+            }
+
+            if (target === null) {
+                targetInput.classList.add('error');
+                resultSection.innerHTML = `
+                    <div class="result-card no-result">
+                        <div class="result-message">⚠️ 请输入有效的预期结果</div>
+                    </div>`;
+                setButtons(false, false);
+                return;
+            } else {
+                targetInput.classList.remove('error');
+            }
+
+            // 重置状态
+            stopSearch = false;
+            currentSearch = {
+                numbers: numbers,
+                target: target,
+                totalCount: numbers.length,
+                excludeSet: new Set(),
+                isSearching: true,
+            };
+
+            setButtons(true, false);
+
+            const targetFraction = Fraction.fromDecimal(target);
+            let extra = 0;
+            let found = false;
+
+            try {
+                while (!stopSearch) {
+                    const totalCount = numbers.length + extra;
+                    currentSearch.totalCount = totalCount;
+                    resultSection.innerHTML = `
+                        <div class="result-card searching">
+                            <div class="result-label">🔍 正在搜索</div>
+                            <div class="result-message">尝试使用 <strong>${totalCount}</strong> 个数字（原始 ${numbers.length} + 复用 ${extra}）</div>
+                            <div class="result-detail">可随时点击“停止搜索”中断</div>
+                        </div>`;
+
+                    await new Promise(resolve => setTimeout(resolve, 20));
+                    if (stopSearch) break;
+
+                    const startTime = performance.now();
+                    const solution = searchWithTotalCount(numbers, targetFraction, totalCount, currentSearch.excludeSet);
+                    const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+
+                    if (solution) {
+                        found = true;
+                        currentSearch.excludeSet.add(solution.formula);
+                        const formulaDisplay = `${solution.formula} <span class="equals">=</span> ${target}`;
+                        resultSection.innerHTML = `
+                            <div class="result-card success">
+                                <div class="result-label">✅ 找到最短算式</div>
+                                <div class="result-formula">${formulaDisplay}</div>
+                                <div class="result-detail">使用 ${solution.usedCount} 个数字（原始 ${numbers.length} 个 + 复用 ${solution.extraUsed} 个） · 搜索用时 ${elapsed}s</div>
+                            </div>`;
+                        addHistory(numbers, target, solution.formula, solution.usedCount);
+                        break;
+                    }
+
+                    extra++;
+                    if (extra === 20) {
+                        console.warn('已尝试复用 20 个数字，仍无解，可能不存在有限解。');
+                    }
+                }
+            } catch (err) {
+                resultSection.innerHTML = `
+                    <div class="result-card no-result">
+                        <div class="result-message">⚠️ 搜索出错：${err.message}</div>
+                    </div>`;
+                console.error(err);
+            } finally {
+                currentSearch.isSearching = false;
+                setButtons(false, found);
+                if (stopSearch && !found) {
+                    resultSection.innerHTML += `
+                        <div class="result-card no-result" style="margin-top: 10px;">
+                            <div class="result-message">⏹️ 搜索已停止</div>
+                        </div>`;
+                }
+            }
+        }
+
+        async function nextSolution() {
+            if (!currentSearch || currentSearch.isSearching) return;
+
+            const resultSection = document.getElementById('resultSection');
+            const numbers = currentSearch.numbers;
+            const target = currentSearch.target;
+            const targetFraction = Fraction.fromDecimal(target);
+            const excludeSet = currentSearch.excludeSet;
+
+            stopSearch = false;
+            currentSearch.isSearching = true;
+            setButtons(true, true); // 隐藏按钮，显示停止
+
+            let found = false;
+
+            try {
+                // 从当前数字总数开始尝试
+                let totalCount = currentSearch.totalCount;
+                while (!stopSearch) {
+                    resultSection.innerHTML = `
+                        <div class="result-card searching">
+                            <div class="result-label">🔍 正在搜索下一个解</div>
+                            <div class="result-message">尝试使用 <strong>${totalCount}</strong> 个数字</div>
+                            <div class="result-detail">已排除 ${excludeSet.size} 个已找到的解</div>
+                        </div>`;
+
+                    await new Promise(resolve => setTimeout(resolve, 20));
+                    if (stopSearch) break;
+
+                    const startTime = performance.now();
+                    const solution = searchWithTotalCount(numbers, targetFraction, totalCount, excludeSet);
+                    const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+
+                    if (solution) {
+                        found = true;
+                        currentSearch.excludeSet.add(solution.formula);
+                        currentSearch.totalCount = totalCount;
+                        const formulaDisplay = `${solution.formula} <span class="equals">=</span> ${target}`;
+                        resultSection.innerHTML = `
+                            <div class="result-card success">
+                                <div class="result-label">✅ 找到下一个解</div>
+                                <div class="result-formula">${formulaDisplay}</div>
+                                <div class="result-detail">使用 ${solution.usedCount} 个数字（原始 ${numbers.length} 个 + 复用 ${solution.extraUsed} 个） · 搜索用时 ${elapsed}s</div>
+                            </div>`;
+                        addHistory(numbers, target, solution.formula, solution.usedCount);
+                        break;
+                    }
+
+                    totalCount++;
+                    if (totalCount - numbers.length > 20) {
+                        // 限制无限增长，防止极端情况
+                        resultSection.innerHTML = `
+                            <div class="result-card no-result">
+                                <div class="result-message">⏹️ 已尝试复用 20 个数字，未找到更多解</div>
+                            </div>`;
+                        break;
+                    }
+                }
+            } catch (err) {
+                resultSection.innerHTML = `
+                    <div class="result-card no-result">
+                        <div class="result-message">⚠️ 搜索出错：${err.message}</div>
+                    </div>`;
+                console.error(err);
+            } finally {
+                currentSearch.isSearching = false;
+                setButtons(false, true);
+                if (stopSearch && !found) {
+                    resultSection.innerHTML += `
+                        <div class="result-card no-result" style="margin-top: 10px;">
+                            <div class="result-message">⏹️ 搜索已停止</div>
+                        </div>`;
+                }
+            }
+        }
+
+        function addHistory(numbers, target, formula, usedCount) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            history.unshift({
+                numbers: numbers.join(','),
+                target: target,
+                formula: formula,
+                usedCount: usedCount,
+                time: timeStr,
+            });
+            if (history.length > 20) history.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const historySection = document.getElementById('historySection');
+            const historyList = document.getElementById('historyList');
+            if (history.length === 0) {
+                historySection.style.display = 'none';
+                return;
+            }
+            historySection.style.display = 'block';
+            historyList.innerHTML = history.map(item => `
+                <div class="history-item">
+                    <span class="h-count">${item.usedCount}个数字</span>
+                    <span class="h-formula">${item.formula} = ${item.target}</span>
+                    <span style="margin-left:auto;font-size:11px;color:#b0b3c5;">${item.time}</span>
+                </div>
+            `).join('');
+        }
+
+        // ==================== 键盘事件 ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            const numbersInput = document.getElementById('numbersInput');
+            const targetInput = document.getElementById('targetInput');
+
+            numbersInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') targetInput.focus();
+            });
+            targetInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') solve();
+            });
+
+            numbersInput.addEventListener('input', () => numbersInput.classList.remove('error'));
+            targetInput.addEventListener('input', () => targetInput.classList.remove('error'));
+
+            numbersInput.value = '1, 2, 3, 4';
+            targetInput.value = '24';
+        });
+
+        // ==================== 导出函数供 HTML 调用 ====================
+        window.solve = solve;
+        window.nextSolution = nextSolution;
+        window.stopSearchHandler = stopSearchHandler;
+        window.parseNumbersInput = parseNumbersInput;
+        window.parseTargetInput = parseTargetInput;
+        window.Fraction = Fraction;
+        window.searchWithTotalCount = searchWithTotalCount;
+    </script>
+</body>
+</html>

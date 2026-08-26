@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>☢ 石墨反应堆 - 失控模拟器</title>
+    <style>
+        /* ===== 全局重置 & 基础 (与之前一致) ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-primary: #0a0c12;
+            --bg-secondary: #141822;
+            --bg-card: #1a1f2e;
+            --bg-card-hover: #222a3e;
+            --border-color: #2a3a5a;
+            --text-primary: #c8d6e5;
+            --text-secondary: #8395a7;
+            --text-bright: #f0f4ff;
+            --accent-blue: #3d7bf7;
+            --accent-cyan: #00d4ff;
+            --danger-red: #ff1744;
+            --danger-orange: #ff6d00;
+            --warning-yellow: #ffd740;
+            --safe-green: #00e676;
+            --glow-red: rgba(255, 23, 68, 0.3);
+            --glow-orange: rgba(255, 109, 0, 0.3);
+            --glow-blue: rgba(0, 212, 255, 0.15);
+            --font-mono: 'Orbitron', 'Courier New', monospace;
+            --font-sans: 'Rajdhani', 'Segoe UI', sans-serif;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            user-select: none;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(61, 123, 247, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(255, 23, 68, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 212, 255, 0.03) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 12px 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        #top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 16px 6px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            flex-shrink: 0;
+            min-height: 52px;
+            position: relative;
+            overflow: hidden;
+        }
+        #top-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan), var(--danger-red));
+            opacity: 0.5;
+        }
+
+        #game-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-mono);
+            font-weight: 900;
+            font-size: 18px;
+            letter-spacing: 2px;
+            color: var(--text-bright);
+        }
+        #game-title .icon {
+            font-size: 24px;
+            filter: drop-shadow(0 0 8px rgba(255, 23, 68, 0.4));
+            animation: pulse-icon 2s ease-in-out infinite;
+        }
+        @keyframes pulse-icon {
+            0%,
+            100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 8px rgba(255, 23, 68, 0.4));
+            }
+            50% {
+                transform: scale(1.1);
+                filter: drop-shadow(0 0 20px rgba(255, 23, 68, 0.8));
+            }
+        }
+
+        #status-area {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 14px 4px 10px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+        }
+        #status-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--safe-green);
+            box-shadow: 0 0 12px rgba(0, 230, 118, 0.4);
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        #status-light.warning {
+            background: var(--warning-yellow);
+            box-shadow: 0 0 20px rgba(255, 215, 64, 0.6);
+            animation: blink-warning 0.8s ease-in-out infinite;
+        }
+        #status-light.danger {
+            background: var(--danger-red);
+            box-shadow: 0 0 30px rgba(255, 23, 68, 0.8);
+            animation: blink-danger 0.4s ease-in-out infinite;
+        }
+        #status-light.meltdown {
+            background: #8a00ff;
+            box-shadow: 0 0 50px rgba(138, 0, 255, 0.9);
+            animation: blink-meltdown 0.2s ease-in-out infinite;
+        }
+        @keyframes blink-warning {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(0.85);
+            }
+        }
+        @keyframes blink-danger {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.2;
+                transform: scale(0.7);
+            }
+        }
+        @keyframes blink-meltdown {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1.2);
+                box-shadow: 0 0 60px rgba(138, 0, 255, 1);
+            }
+            50% {
+                opacity: 0.3;
+                transform: scale(0.8);
+                box-shadow: 0 0 20px rgba(138, 0, 255, 0.3);
+            }
+        }
+
+        #status-text {
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            min-width: 60px;
+        }
+        #status-text.normal {
+            color: var(--safe-green);
+        }
+        #status-text.warning {
+            color: var(--warning-yellow);
+        }
+        #status-text.danger {
+            color: var(--danger-red);
+        }
+        #status-text.meltdown {
+            color: #b388ff;
+        }
+
+        #timer-display {
+            font-family: var(--font-mono);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            padding: 4px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            min-width: 80px;
+            text-align: center;
+        }
+        #timer-display .num {
+            color: var(--text-bright);
+        }
+
+        #game-over-badge {
+            display: none;
+            font-family: var(--font-mono);
+            font-weight: 900;
+            font-size: 16px;
+            padding: 4px 16px;
+            border-radius: 4px;
+            background: var(--danger-red);
+            color: #fff;
+            animation: blink-danger 0.6s ease-in-out infinite;
+            letter-spacing: 2px;
+        }
+        #game-over-badge.show {
+            display: inline-block;
+        }
+
+        #gauges-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .gauge-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px 14px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .gauge-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-blue);
+            opacity: 0.3;
+            transition: opacity 0.3s;
+        }
+        .gauge-card.danger::before {
+            background: var(--danger-red);
+            opacity: 1;
+            animation: pulse-line 0.8s ease-in-out infinite;
+        }
+        .gauge-card.warning::before {
+            background: var(--warning-yellow);
+            opacity: 1;
+            animation: pulse-line 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse-line {
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .gauge-card.danger {
+            border-color: var(--danger-red);
+            box-shadow: 0 0 20px var(--glow-red);
+        }
+        .gauge-card.warning {
+            border-color: var(--warning-yellow);
+            box-shadow: 0 0 15px var(--glow-orange);
+        }
+
+        .gauge-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .gauge-label .unit {
+            font-size: 11px;
+            opacity: 0.6;
+            font-weight: 400;
+        }
+        .gauge-value {
+            font-family: var(--font-mono);
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--text-bright);
+            letter-spacing: 1px;
+            line-height: 1.1;
+            transition: color 0.3s;
+        }
+        .gauge-value.danger {
+            color: var(--danger-red);
+            text-shadow: 0 0 30px var(--glow-red);
+        }
+        .gauge-value.warning {
+            color: var(--warning-yellow);
+            text-shadow: 0 0 20px var(--glow-orange);
+        }
+
+        .gauge-bar-wrap {
+            margin-top: 8px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .gauge-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.4s ease, background 0.4s ease;
+            width: 50%;
+            background: var(--accent-blue);
+        }
+        .gauge-bar.danger {
+            background: var(--danger-red);
+            box-shadow: 0 0 16px var(--glow-red);
+        }
+        .gauge-bar.warning {
+            background: var(--warning-yellow);
+            box-shadow: 0 0 12px var(--glow-orange);
+        }
+        .gauge-bar.safe {
+            background: var(--safe-green);
+            box-shadow: 0 0 12px rgba(0, 230, 118, 0.2);
+        }
+
+        .gauge-threshold {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: var(--danger-red);
+            opacity: 0.6;
+            z-index: 2;
+        }
+
+        #middle-area {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        #log-panel {
+            flex: 2;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 14px 8px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+        }
+        #log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            flex-shrink: 0;
+        }
+        #log-header span:last-child {
+            font-size: 10px;
+            opacity: 0.5;
+            font-weight: 400;
+        }
+        #log-entries {
+            flex: 1;
+            overflow-y: auto;
+            padding-top: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+        #log-entries::-webkit-scrollbar {
+            width: 4px;
+        }
+        #log-entries::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #log-entries::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .log-entry {
+            padding: 1px 4px;
+            border-radius: 2px;
+            opacity: 0.9;
+            animation: fadeInLog 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .log-entry .time {
+            color: var(--text-secondary);
+            font-size: 10px;
+            margin-right: 8px;
+            opacity: 0.6;
+        }
+        .log-entry.info {
+            color: var(--text-primary);
+        }
+        .log-entry.warning {
+            color: var(--warning-yellow);
+        }
+        .log-entry.danger {
+            color: var(--danger-red);
+            font-weight: 600;
+        }
+        .log-entry.success {
+            color: var(--safe-green);
+            font-weight: 600;
+        }
+        .log-entry.action {
+            color: var(--accent-cyan);
+        }
+        .log-entry.system {
+            color: var(--accent-blue);
+            opacity: 0.7;
+        }
+        .log-entry.meltdown {
+            color: #b388ff;
+            font-weight: 900;
+            font-size: 14px;
+            animation: meltdown-text 0.3s ease-in-out infinite alternate;
+        }
+        @keyframes meltdown-text {
+            0% {
+                text-shadow: 0 0 10px rgba(138, 0, 255, 0.3);
+            }
+            100% {
+                text-shadow: 0 0 30px rgba(138, 0, 255, 0.8);
+            }
+        }
+        @keyframes fadeInLog {
+            0% {
+                opacity: 0;
+                transform: translateX(-6px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        #reactor-status {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 160px;
+            position: relative;
+            overflow: hidden;
+        }
+        #reactor-status .label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        #reactor-graphic {
+            position: relative;
+            width: 100%;
+            max-width: 140px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #reactor-core {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%, #2a3a5a, #0a0c12);
+            border: 3px solid var(--border-color);
+            position: relative;
+            transition: all 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.1);
+        }
+        #reactor-core .core-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transition: all 0.5s;
+            opacity: 0;
+        }
+        #reactor-core .core-glow.active {
+            opacity: 1;
+        }
+        #reactor-core .core-glow.green {
+            background: radial-gradient(circle at 40% 35%, rgba(0, 230, 118, 0.15), transparent 70%);
+        }
+        #reactor-core .core-glow.yellow {
+            background: radial-gradient(circle at 40% 35%, rgba(255, 215, 64, 0.3), transparent 70%);
+            animation: pulse-glow 1s ease-in-out infinite;
+        }
+        #reactor-core .core-glow.red {
+            background: radial-gradient(circle at 40% 35%, rgba(255, 23, 68, 0.5), transparent 70%);
+            animation: pulse-glow 0.5s ease-in-out infinite;
+        }
+        #reactor-core .core-glow.meltdown {
+            background: radial-gradient(circle at 40% 35%, rgba(138, 0, 255, 0.7), rgba(255, 23, 68, 0.3) 50%, transparent 80%);
+            animation: pulse-glow 0.15s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(1.15);
+                opacity: 1;
+            }
+        }
+
+        #reactor-core .core-temp {
+            position: absolute;
+            bottom: -6px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+        #reactor-core .core-status-text {
+            position: absolute;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        #reactor-core .core-status-text.normal {
+            color: var(--safe-green);
+        }
+        #reactor-core .core-status-text.warning {
+            color: var(--warning-yellow);
+        }
+        #reactor-core .core-status-text.danger {
+            color: var(--danger-red);
+        }
+        #reactor-core .core-status-text.meltdown {
+            color: #b388ff;
+            font-size: 14px;
+        }
+
+        #control-rod-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        #control-rod-indicator .bar {
+            width: 60px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #control-rod-indicator .bar .fill {
+            height: 100%;
+            border-radius: 4px;
+            background: var(--accent-cyan);
+            transition: width 0.5s;
+            width: 70%;
+        }
+        #control-rod-indicator .bar .fill.danger {
+            background: var(--danger-red);
+        }
+
+        #action-panel {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+            padding: 6px 0 2px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .action-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        .action-btn .sub {
+            font-size: 9px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            opacity: 0.6;
+            letter-spacing: 0.5px;
+        }
+        .action-btn .cooldown-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-blue);
+            transition: width 0.1s linear;
+            width: 0%;
+            opacity: 0.6;
+        }
+        .action-btn:hover:not(:disabled) {
+            border-color: var(--accent-cyan);
+            background: var(--bg-card-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.08);
+        }
+        .action-btn:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+        .action-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+        }
+        .action-btn:disabled .cooldown-overlay {
+            background: var(--text-secondary);
+        }
+        .action-btn .icon {
+            font-size: 18px;
+        }
+        .action-btn.danger {
+            border-color: rgba(255, 23, 68, 0.3);
+        }
+        .action-btn.danger:hover:not(:disabled) {
+            border-color: var(--danger-red);
+            box-shadow: 0 4px 30px var(--glow-red);
+        }
+        .action-btn.emergency {
+            border-color: rgba(255, 23, 68, 0.5);
+            background: rgba(255, 23, 68, 0.08);
+        }
+        .action-btn.emergency:hover:not(:disabled) {
+            background: rgba(255, 23, 68, 0.2);
+            border-color: var(--danger-red);
+            box-shadow: 0 4px 40px var(--glow-red);
+        }
+
+        #game-over-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+            animation: overlayIn 0.8s ease;
+        }
+        #game-over-overlay.show {
+            display: flex;
+        }
+        @keyframes overlayIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        #game-over-box {
+            max-width: 600px;
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 40px 48px 36px;
+            text-align: center;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+        #game-over-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--danger-red), var(--warning-yellow), var(--danger-red));
+        }
+        #game-over-box .result-icon {
+            font-size: 64px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        #game-over-box .result-title {
+            font-family: var(--font-mono);
+            font-weight: 900;
+            font-size: 28px;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+        }
+        #game-over-box .result-title.fail {
+            color: var(--danger-red);
+            text-shadow: 0 0 40px var(--glow-red);
+        }
+        #game-over-box .result-title.success {
+            color: var(--safe-green);
+            text-shadow: 0 0 40px rgba(0, 230, 118, 0.3);
+        }
+        #game-over-box .result-sub {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        #game-over-box .result-stats {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin: 16px 0 24px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        #game-over-box .result-stats span {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #game-over-box .result-stats .num {
+            font-family: var(--font-mono);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-bright);
+        }
+        #restart-btn {
+            padding: 12px 48px;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent-blue);
+            color: #fff;
+            font-family: var(--font-sans);
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+        #restart-btn:hover {
+            background: var(--accent-cyan);
+            transform: scale(1.02);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
+        }
+        #restart-btn:active {
+            transform: scale(0.97);
+        }
+
+        @media (max-width: 900px) {
+            #gauges-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .gauge-value {
+                font-size: 22px;
+            }
+            #middle-area {
+                flex-direction: column;
+            }
+            #reactor-status {
+                min-height: 100px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 12px;
+                justify-content: space-around;
+                padding: 10px 16px;
+            }
+            #reactor-graphic {
+                max-width: 80px;
+            }
+            #log-panel {
+                flex: 1;
+                min-height: 100px;
+            }
+            #top-bar {
+                flex-wrap: wrap;
+                gap: 6px;
+                padding: 6px 12px;
+                min-height: 44px;
+            }
+            #game-title {
+                font-size: 14px;
+            }
+            #status-area {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            #game-over-box {
+                padding: 28px 20px;
+            }
+            .action-btn {
+                min-width: 60px;
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+            .action-btn .icon {
+                font-size: 15px;
+            }
+            #game-container {
+                padding: 8px 10px 10px;
+                gap: 6px;
+            }
+        }
+        @media (max-width: 500px) {
+            #gauges-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+            .gauge-card {
+                padding: 8px 10px 10px;
+            }
+            .gauge-value {
+                font-size: 18px;
+            }
+            .gauge-label {
+                font-size: 10px;
+            }
+            #log-entries {
+                font-size: 10px;
+                line-height: 1.4;
+            }
+            #game-title {
+                font-size: 12px;
+                letter-spacing: 1px;
+            }
+            #game-title .icon {
+                font-size: 18px;
+            }
+            #status-indicator {
+                font-size: 11px;
+                padding: 2px 10px 2px 8px;
+            }
+            #timer-display {
+                font-size: 12px;
+                min-width: 60px;
+                padding: 2px 8px;
+            }
+            .action-btn {
+                min-width: 48px;
+                padding: 6px 8px;
+                font-size: 10px;
+                flex: 1 1 30%;
+            }
+            .action-btn .sub {
+                font-size: 7px;
+            }
+            .action-btn .icon {
+                font-size: 13px;
+            }
+            #game-over-box .result-title {
+                font-size: 20px;
+            }
+            #game-over-box .result-icon {
+                font-size: 44px;
+            }
+            #restart-btn {
+                padding: 10px 32px;
+                font-size: 15px;
+            }
+            #reactor-status .label {
+                font-size: 9px;
+            }
+            #reactor-core {
+                font-size: 18px;
+            }
+            #control-rod-indicator {
+                font-size: 9px;
+            }
+            #control-rod-indicator .bar {
+                width: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 主容器 ===== -->
+    <div id="game-container">
+        <!-- 顶部栏 -->
+        <div id="top-bar">
+            <div id="game-title">
+                <span class="icon">☢</span>
+                <span>石墨反应堆 · 失控模拟</span>
+            </div>
+            <div id="status-area">
+                <div id="status-indicator">
+                    <span id="status-light"></span>
+                    <span id="status-text">正常</span>
+                </div>
+                <div id="timer-display">
+                    ⏱ <span class="num" id="timer-value">0</span>s
+                </div>
+                <div id="game-over-badge">⛔ 已失效</div>
+            </div>
+        </div>
+
+        <!-- 仪表盘 -->
+        <div id="gauges-grid">
+            <div class="gauge-card" id="gauge-temp">
+                <div class="gauge-label">堆芯温度 <span class="unit">°C</span></div>
+                <div class="gauge-value" id="temp-value">450</div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar" id="temp-bar" style="width:45%"></div>
+                </div>
+            </div>
+            <div class="gauge-card" id="gauge-pressure">
+                <div class="gauge-label">压力 <span class="unit">MPa</span></div>
+                <div class="gauge-value" id="pressure-value">8.0</div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar" id="pressure-bar" style="width:53%"></div>
+                </div>
+            </div>
+            <div class="gauge-card" id="gauge-neutron">
+                <div class="gauge-label">中子通量 <span class="unit">%</span></div>
+                <div class="gauge-value" id="neutron-value">70</div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar" id="neutron-bar" style="width:70%"></div>
+                </div>
+            </div>
+            <div class="gauge-card" id="gauge-coolant">
+                <div class="gauge-label">冷却剂水位 <span class="unit">%</span></div>
+                <div class="gauge-value" id="coolant-value">70</div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar" id="coolant-bar" style="width:70%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中间区域 -->
+        <div id="middle-area">
+            <div id="log-panel">
+                <div id="log-header">
+                    <span>📋 事件日志</span>
+                    <span id="log-count">0 条</span>
+                </div>
+                <div id="log-entries"></div>
+            </div>
+            <div id="reactor-status">
+                <div class="label">⚛ 反应堆状态</div>
+                <div id="reactor-graphic">
+                    <div id="reactor-core">
+                        <div class="core-glow green active" id="core-glow"></div>
+                        <span class="core-status-text normal" id="core-status-label">⏺ 运行</span>
+                        <span class="core-temp" id="core-temp-label">450°C</span>
+                    </div>
+                </div>
+                <div id="control-rod-indicator">
+                    <span>控制棒</span>
+                    <div class="bar"><div class="fill" id="rod-fill" style="width:70%"></div></div>
+                    <span id="rod-label">70%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作面板 -->
+        <div id="action-panel">
+            <button class="action-btn" id="btn-rods" data-cooldown="8">
+                <span class="icon">⬇️</span>
+                插入控制棒
+                <span class="sub">降低中子通量</span>
+                <span class="cooldown-overlay" style="width:0%"></span>
+            </button>
+            <button class="action-btn" id="btn-cooling" data-cooldown="12">
+                <span class="icon">❄️</span>
+                应急冷却
+                <span class="sub">降低温度</span>
+                <span class="cooldown-overlay" style="width:0%"></span>
+            </button>
+            <button class="action-btn" id="btn-vent" data-cooldown="10">
+                <span class="icon">💨</span>
+                泄压阀
+                <span class="sub">降低压力</span>
+                <span class="cooldown-overlay" style="width:0%"></span>
+            </button>
+            <button class="action-btn" id="btn-water" data-cooldown="7">
+                <span class="icon">💧</span>
+                注入冷却剂
+                <span class="sub">补充水位</span>
+                <span class="cooldown-overlay" style="width:0%"></span>
+            </button>
+            <button class="action-btn emergency" id="btn-scram" data-cooldown="25">
+                <span class="icon">🛑</span>
+                紧急停机
+                <span class="sub">高风险 · 强力抑制</span>
+                <span class="cooldown-overlay" style="width:0%"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 游戏结束覆盖层 ===== -->
+    <div id="game-over-overlay">
+        <div id="game-over-box">
+            <span class="result-icon" id="result-icon">💥</span>
+            <div class="result-title fail" id="result-title">堆芯熔毁</div>
+            <div class="result-sub" id="result-sub">反应堆已完全失控，灾难无法避免。</div>
+            <div class="result-stats">
+                <span>存活时间 <span class="num" id="final-time">0</span>s</span>
+                <span>最高温度 <span class="num" id="final-temp">0</span>°C</span>
+                <span>操作次数 <span class="num" id="final-actions">0</span></span>
+            </div>
+            <button id="restart-btn">⟳ 重新尝试</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  GAME 核心逻辑 (已根据反馈修改)
+        // ============================================================
+
+        // ---- 状态 ----
+        const state = {
+            temp: 450, // °C
+            pressure: 8.0, // MPa
+            neutron: 70, // %
+            coolant: 70, // %
+
+            tempMin: 300,
+            tempMax: 600,
+            tempMeltdown: 1000,
+            pressureMax: 12,
+            pressureExplode: 15,
+            neutronMax: 85,
+            neutronRunaway: 95,
+            coolantMin: 30,
+            coolantDry: 10,
+
+            gameOver: false,
+            gameWon: false,
+            time: 0,
+            actions: 0,
+            successTimer: 0,
+            successRequired: 60, // 秒
+
+            cooldowns: {
+                rods: 0,
+                cooling: 0,
+                vent: 0,
+                water: 0,
+                scram: 0
+            },
+
+            events: [],
+            eventTimer: 0,
+            eventInterval: 20, // 秒
+
+            // 随机事件状态
+            rodStuck: false,
+            rodStuckTimer: 0,
+            pumpFault: false,
+            pumpFaultTimer: 0,
+            leakFault: false,
+            leakFaultTimer: 0,
+            scramPenalty: false,
+            scramPenaltyTimer: 0,
+
+            // 用于显示
+            logEntries: [],
+            maxLog: 80,
+        };
+
+        // ---- DOM 引用 ----
+        const $ = id => document.getElementById(id);
+        const tempVal = $('temp-value');
+        const pressureVal = $('pressure-value');
+        const neutronVal = $('neutron-value');
+        const coolantVal = $('coolant-value');
+        const tempBar = $('temp-bar');
+        const pressureBar = $('pressure-bar');
+        const neutronBar = $('neutron-bar');
+        const coolantBar = $('coolant-bar');
+        const gaugeTemp = $('gauge-temp');
+        const gaugePressure = $('gauge-pressure');
+        const gaugeNeutron = $('gauge-neutron');
+        const gaugeCoolant = $('gauge-coolant');
+        const statusLight = $('status-light');
+        const statusText = $('status-text');
+        const timerValue = $('timer-value');
+        const logEntries = $('log-entries');
+        const logCount = $('log-count');
+        const coreGlow = $('core-glow');
+        const coreStatusLabel = $('core-status-label');
+        const coreTempLabel = $('core-temp-label');
+        const rodFill = $('rod-fill');
+        const rodLabel = $('rod-label');
+        const gameOverOverlay = $('game-over-overlay');
+        const resultIcon = $('result-icon');
+        const resultTitle = $('result-title');
+        const resultSub = $('result-sub');
+        const finalTime = $('final-time');
+        const finalTemp = $('final-temp');
+        const finalActions = $('final-actions');
+        const restartBtn = $('restart-btn');
+        const gameOverBadge = $('game-over-badge');
+
+        // ---- 按钮 ----
+        const btnRods = $('btn-rods');
+        const btnCooling = $('btn-cooling');
+        const btnVent = $('btn-vent');
+        const btnWater = $('btn-water');
+        const btnScram = $('btn-scram');
+        const allButtons = [btnRods, btnCooling, btnVent, btnWater, btnScram];
+
+        // ---- 工具 ----
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+
+        function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+
+        function lerp(a, b, t) { return a + (b - a) * t; }
+
+        // ---- 日志 ----
+        function addLog(message, type = 'info') {
+            const time = state.time;
+            const entry = { time, message, type };
+            state.logEntries.push(entry);
+            if (state.logEntries.length > state.maxLog) {
+                state.logEntries.shift();
+            }
+            renderLog();
+        }
+
+        function renderLog() {
+            logEntries.innerHTML = '';
+            state.logEntries.forEach(e => {
+                const div = document.createElement('div');
+                div.className = `log-entry ${e.type}`;
+                const timeStr = String(e.time).padStart(4, '0');
+                div.innerHTML = `<span class="time">[${timeStr}s]</span> ${e.message}`;
+                logEntries.appendChild(div);
+            });
+            logCount.textContent = state.logEntries.length + ' 条';
+            logEntries.scrollTop = logEntries.scrollHeight;
+        }
+
+        // ---- 更新UI ----
+        function updateUI() {
+            // 数值
+            tempVal.textContent = Math.round(state.temp);
+            pressureVal.textContent = state.pressure.toFixed(1);
+            neutronVal.textContent = Math.round(state.neutron);
+            coolantVal.textContent = Math.round(state.coolant);
+
+            // 进度条
+            const tempPct = clamp((state.temp - 200) / 800 * 100, 0, 100);
+            const pressurePct = clamp(state.pressure / 16 * 100, 0, 100);
+            const neutronPct = clamp(state.neutron, 0, 100);
+            const coolantPct = clamp(state.coolant, 0, 100);
+
+            tempBar.style.width = tempPct + '%';
+            pressureBar.style.width = pressurePct + '%';
+            neutronBar.style.width = neutronPct + '%';
+            coolantBar.style.width = coolantPct + '%';
+
+            // 颜色
+            const tempDanger = state.temp >= state.tempMax;
+            const tempWarn = state.temp >= state.tempMax * 0.85;
+            const pressDanger = state.pressure >= state.pressureMax;
+            const pressWarn = state.pressure >= state.pressureMax * 0.85;
+            const neutDanger = state.neutron >= state.neutronMax;
+            const neutWarn = state.neutron >= state.neutronMax * 0.85;
+            const coolDanger = state.coolant <= state.coolantMin;
+            const coolWarn = state.coolant <= state.coolantMin * 1.3;
+
+            function setGauge(card, valEl, barEl, danger, warn) {
+                card.classList.toggle('danger', danger);
+                card.classList.toggle('warning', warn && !danger);
+                valEl.classList.toggle('danger', danger);
+                valEl.classList.toggle('warning', warn && !danger);
+                barEl.classList.toggle('danger', danger);
+                barEl.classList.toggle('warning', warn && !danger);
+                barEl.classList.toggle('safe', !danger && !warn);
+            }
+
+            setGauge(gaugeTemp, tempVal, tempBar, tempDanger, tempWarn);
+            setGauge(gaugePressure, pressureVal, pressureBar, pressDanger, pressWarn);
+            setGauge(gaugeNeutron, neutronVal, neutronBar, neutDanger, neutWarn);
+            setGauge(gaugeCoolant, coolantVal, coolantBar, coolDanger, coolWarn);
+
+            // 状态灯
+            const isMeltdown = state.temp >= state.tempMeltdown || state.pressure >= state.pressureExplode ||
+                state.neutron >= state.neutronRunaway || state.coolant <= state.coolantDry;
+
+            if (isMeltdown) {
+                statusLight.className = 'meltdown';
+                statusText.className = 'meltdown';
+                statusText.textContent = '💀 熔毁';
+            } else if (tempDanger || pressDanger || neutDanger || coolDanger) {
+                statusLight.className = 'danger';
+                statusText.className = 'danger';
+                statusText.textContent = '⚠ 危急';
+            } else if (tempWarn || pressWarn || neutWarn || coolWarn) {
+                statusLight.className = 'warning';
+                statusText.className = 'warning';
+                statusText.textContent = '⚡ 警告';
+            } else {
+                statusLight.className = '';
+                statusText.className = 'normal';
+                statusText.textContent = '✅ 正常';
+            }
+
+            // 计时器
+            timerValue.textContent = state.time;
+
+            // 反应堆图形
+            const core = document.getElementById('reactor-core');
+            const glow = coreGlow;
+            glow.className = 'core-glow';
+
+            let statusLabel = '⏺ 运行';
+            let statusClass = 'normal';
+
+            if (isMeltdown) {
+                glow.classList.add('meltdown');
+                statusLabel = '💀 熔毁';
+                statusClass = 'meltdown';
+            } else if (tempDanger || pressDanger || neutDanger || coolDanger) {
+                glow.classList.add('red');
+                statusLabel = '🔥 危急';
+                statusClass = 'danger';
+            } else if (tempWarn || pressWarn || neutWarn || coolWarn) {
+                glow.classList.add('yellow');
+                statusLabel = '⚠ 警告';
+                statusClass = 'warning';
+            } else {
+                glow.classList.add('green');
+                statusLabel = '✅ 运行';
+                statusClass = 'normal';
+            }
+
+            coreStatusLabel.textContent = statusLabel;
+            coreStatusLabel.className = `core-status-text ${statusClass}`;
+            coreTempLabel.textContent = Math.round(state.temp) + '°C';
+
+            // 控制棒
+            const rodPct = clamp(100 - (state.neutron / 100) * 100, 0, 100);
+            rodFill.style.width = rodPct + '%';
+            rodLabel.textContent = Math.round(rodPct) + '%';
+            rodFill.classList.toggle('danger', rodPct < 30);
+
+            // 按钮冷却
+            allButtons.forEach(btn => {
+                const key = btn.id.replace('btn-', '');
+                const cd = state.cooldowns[key] || 0;
+                const overlay = btn.querySelector('.cooldown-overlay');
+                if (cd > 0) {
+                    const total = parseFloat(btn.dataset.cooldown) || 10;
+                    const pct = (cd / total) * 100;
+                    overlay.style.width = pct + '%';
+                    btn.disabled = true;
+                } else {
+                    overlay.style.width = '0%';
+                    btn.disabled = false;
+                }
+            });
+
+            // 紧急停机按钮特殊样式
+            if (state.scramPenalty) {
+                btnScram.disabled = true;
+                btnScram.querySelector('.cooldown-overlay').style.width = '100%';
+            }
+        }
+
+        // ---- 核心更新 ----
+        function updateGame() {
+            if (state.gameOver) return;
+
+            const dt = 1; // 每秒
+
+            // 自然恶化
+            const tempRise = rand(3, 9) + (state.pumpFault ? rand(4, 10) : 0);
+            state.temp += tempRise * dt;
+
+            const pressRise = rand(0.08, 0.3) + (state.leakFault ? rand(0.1, 0.3) : 0);
+            state.pressure += pressRise * dt;
+
+            const neutRise = rand(0.4, 1.6) + (state.rodStuck ? rand(1.0, 3.0) : 0);
+            state.neutron += neutRise * dt;
+
+            const coolDrop = rand(0.3, 1.2) + (state.leakFault ? rand(0.5, 1.5) : 0);
+            state.coolant -= coolDrop * dt;
+
+            // 冷却剂与温度的耦合：温度高时冷却剂蒸发更快
+            if (state.temp > 700) {
+                state.coolant -= rand(0.5, 1.5) * dt;
+            }
+            if (state.temp > 900) {
+                state.coolant -= rand(1.0, 2.5) * dt;
+            }
+
+            // 压力与温度的耦合
+            if (state.temp > 700) {
+                state.pressure += rand(0.05, 0.2) * dt;
+            }
+
+            // 中子通量与温度的耦合
+            if (state.temp > 650) {
+                state.neutron += rand(0.2, 0.8) * dt;
+            }
+
+            // 钳制
+            state.temp = clamp(state.temp, 200, 1200);
+            state.pressure = clamp(state.pressure, 0, 20);
+            state.neutron = clamp(state.neutron, 0, 100);
+            state.coolant = clamp(state.coolant, 0, 100);
+
+            // ---- 随机事件 ----
+            state.eventTimer += dt;
+            if (state.eventTimer >= state.eventInterval) {
+                state.eventTimer = 0;
+                state.eventInterval = rand(12, 30);
+                triggerRandomEvent();
+            }
+
+            // ---- 状态事件计时器 ----
+            if (state.rodStuck) {
+                state.rodStuckTimer -= dt;
+                if (state.rodStuckTimer <= 0) {
+                    state.rodStuck = false;
+                    addLog('控制棒恢复正常', 'info');
+                }
+            }
+            if (state.pumpFault) {
+                state.pumpFaultTimer -= dt;
+                if (state.pumpFaultTimer <= 0) {
+                    state.pumpFault = false;
+                    addLog('冷却泵已恢复', 'info');
+                }
+            }
+            if (state.leakFault) {
+                state.leakFaultTimer -= dt;
+                if (state.leakFaultTimer <= 0) {
+                    state.leakFault = false;
+                    addLog('管道泄漏已封堵', 'info');
+                }
+            }
+            if (state.scramPenalty) {
+                state.scramPenaltyTimer -= dt;
+                if (state.scramPenaltyTimer <= 0) {
+                    state.scramPenalty = false;
+                    addLog('紧急停机后遗症消退', 'info');
+                }
+            }
+
+            // ---- 检查失败条件 ----
+            let failed = false;
+            let failMsg = '';
+            let failIcon = '💥';
+
+            if (state.temp >= state.tempMeltdown) {
+                failed = true;
+                failMsg = '堆芯温度超过1000°C，燃料熔化！';
+                failIcon = '🔥';
+            } else if (state.pressure >= state.pressureExplode) {
+                failed = true;
+                failMsg = '压力超过15MPa，反应堆爆炸！';
+                failIcon = '💥';
+            } else if (state.neutron >= state.neutronRunaway) {
+                failed = true;
+                failMsg = '中子通量失控，链式反应无法抑制！';
+                failIcon = '☢';
+            } else if (state.coolant <= state.coolantDry) {
+                failed = true;
+                failMsg = '冷却剂耗尽，堆芯干涸！';
+                failIcon = '💧';
+            }
+
+            if (failed) {
+                endGame(false, failMsg, failIcon);
+                return;
+            }
+
+            // ---- 检查胜利条件 (几乎不可能) ----
+            const allSafe = state.temp < state.tempMax * 0.9 &&
+                state.pressure < state.pressureMax * 0.9 &&
+                state.neutron < state.neutronMax * 0.9 &&
+                state.coolant > state.coolantMin * 1.2;
+
+            if (allSafe) {
+                state.successTimer += dt;
+                if (state.successTimer >= state.successRequired) {
+                    endGame(true, '你奇迹般地稳定了反应堆！但这几乎不可能...', '🌟');
+                    return;
+                }
+            } else {
+                state.successTimer = Math.max(0, state.successTimer - dt * 2);
+            }
+
+            // ---- 更新计时 ----
+            state.time += dt;
+
+            // ---- 自动日志（周期性） ----
+            if (state.time % 5 === 0 && state.time > 0) {
+                const status = state.temp > 700 ? '危急' : state.temp > 550 ? '偏高' : '运行中';
+                addLog(`状态更新: 温度${Math.round(state.temp)}°C, 压力${state.pressure.toFixed(1)}MPa, 状态: ${status}`, 'system');
+            }
+
+            // ---- UI ----
+            updateUI();
+
+            // ---- 冷却递减 ----
+            for (const key in state.cooldowns) {
+                if (state.cooldowns[key] > 0) {
+                    state.cooldowns[key] = Math.max(0, state.cooldowns[key] - dt);
+                }
+            }
+        }
+
+        // ---- 随机事件 ----
+        function triggerRandomEvent() {
+            if (state.gameOver) return;
+
+            const events = [
+                // 控制棒卡住权重从20降低到10
+                { name: '控制棒卡住', weight: 10, action: () => {
+                        state.rodStuck = true;
+                        state.rodStuckTimer = rand(8, 16);
+                        addLog('⚠ 控制棒卡住！插入控制棒失效！', 'danger');
+                    } },
+                { name: '冷却泵故障', weight: 18, action: () => {
+                        state.pumpFault = true;
+                        state.pumpFaultTimer = rand(10, 18);
+                        addLog('⚠ 冷却泵故障！温度加速上升！', 'danger');
+                    } },
+                { name: '管道泄漏', weight: 18, action: () => {
+                        state.leakFault = true;
+                        state.leakFaultTimer = rand(10, 18);
+                        addLog('⚠ 管道泄漏！冷却剂流失加速！', 'danger');
+                    } },
+                { name: '蒸汽压力突增', weight: 15, action: () => {
+                        const spike = rand(1.0, 2.5);
+                        state.pressure += spike;
+                        addLog(`⚠ 蒸汽压力突增 +${spike.toFixed(1)}MPa！`, 'danger');
+                    } },
+                { name: '中子通量激增', weight: 15, action: () => {
+                        const spike = rand(4, 12);
+                        state.neutron += spike;
+                        addLog(`⚠ 中子通量激增 +${Math.round(spike)}%！`, 'danger');
+                    } },
+                { name: '温度骤升', weight: 14, action: () => {
+                        const spike = rand(20, 50);
+                        state.temp += spike;
+                        addLog(`⚠ 温度骤升 +${Math.round(spike)}°C！`, 'danger');
+                    } },
+            ];
+
+            // 加权随机
+            const total = events.reduce((s, e) => s + e.weight, 0);
+            let r = rand(0, total);
+            let chosen = events[0];
+            for (const e of events) {
+                r -= e.weight;
+                if (r <= 0) { chosen = e; break; }
+            }
+
+            chosen.action();
+
+            // 如果是熔毁边缘，增加事件频率
+            if (state.temp > 700 || state.neutron > 75 || state.pressure > 10) {
+                state.eventInterval = rand(8, 18);
+            } else {
+                state.eventInterval = rand(14, 30);
+            }
+        }
+
+        // ---- 玩家操作 ----
+        function performAction(action) {
+            if (state.gameOver) return;
+            const key = action;
+            if (state.cooldowns[key] > 0) return;
+            if (key === 'scram' && state.scramPenalty) return;
+
+            state.actions++;
+
+            let msg = '';
+            let type = 'action';
+
+            switch (key) {
+                case 'rods': {
+                    // 检查控制棒卡住
+                    if (state.rodStuck) {
+                        addLog('❌ 控制棒卡住，无法插入！', 'danger');
+                        state.cooldowns.rods = 2;
+                        return;
+                    }
+                    // ---- 新增：气泡效应 ----
+                    // 当温度或压力较高时，冷却剂沸腾产生蒸汽气泡，可能将控制棒顶起
+                    const bubbleChance = (state.temp > 650 || state.pressure > 10) ? 0.40 : 0.15;
+                    if (Math.random() < bubbleChance) {
+                        const spikeNeutron = rand(5, 15);
+                        const spikeTemp = rand(10, 25);
+                        state.neutron = clamp(state.neutron + spikeNeutron, 0, 100);
+                        state.temp = clamp(state.temp + spikeTemp, 200, 1200);
+                        addLog(`💨 气泡效应！控制棒被蒸汽顶起，中子通量 +${Math.round(spikeNeutron)}%，温度 +${Math.round(spikeTemp)}°C`, 'danger');
+                        state.cooldowns.rods = parseFloat(btnRods.dataset.cooldown) * 0.5; // 短冷却
+                        return;
+                    }
+                    // 正常插入
+                    const reduction = rand(18, 30);
+                    const heat = rand(8, 18);
+                    state.neutron = clamp(state.neutron - reduction, 0, 100);
+                    state.temp += heat;
+                    msg = `⬇️ 插入控制棒: 中子通量 -${Math.round(reduction)}%, 温度 +${Math.round(heat)}°C`;
+                    state.cooldowns.rods = parseFloat(btnRods.dataset.cooldown);
+                    break;
+                }
+                case 'cooling': {
+                    const cool = rand(25, 50);
+                    const press = rand(0.4, 0.9);
+                    state.temp = clamp(state.temp - cool, 200, 1200);
+                    state.pressure += press;
+                    msg = `❄️ 应急冷却: 温度 -${Math.round(cool)}°C, 压力 +${press.toFixed(1)}MPa`;
+                    state.cooldowns.cooling = parseFloat(btnCooling.dataset.cooldown);
+                    break;
+                }
+                case 'vent': {
+                    const drop = rand(0.8, 1.8);
+                    const coolantLoss = rand(4, 9);
+                    state.pressure = clamp(state.pressure - drop, 0, 20);
+                    state.coolant = clamp(state.coolant - coolantLoss, 0, 100);
+                    msg = `💨 泄压阀: 压力 -${drop.toFixed(1)}MPa, 冷却剂 -${Math.round(coolantLoss)}%`;
+                    state.cooldowns.vent = parseFloat(btnVent.dataset.cooldown);
+                    break;
+                }
+                case 'water': {
+                    const gain = rand(10, 18);
+                    const cool = rand(4, 12);
+                    const press = rand(0.2, 0.5);
+                    state.coolant = clamp(state.coolant + gain, 0, 100);
+                    state.temp = clamp(state.temp - cool, 200, 1200);
+                    state.pressure += press;
+                    msg = `💧 注入冷却剂: 水位 +${Math.round(gain)}%, 温度 -${Math.round(cool)}°C, 压力 +${press.toFixed(1)}MPa`;
+                    state.cooldowns.water = parseFloat(btnWater.dataset.cooldown);
+                    break;
+                }
+                case 'scram': {
+                    // 紧急停机：强力抑制所有参数，但有严重后遗症
+                    const reduction = rand(25, 45);
+                    const tempDrop = rand(30, 60);
+                    const pressDrop = rand(1.0, 2.5);
+
+                    state.neutron = clamp(state.neutron - reduction, 0, 100);
+                    state.temp = clamp(state.temp - tempDrop, 200, 1200);
+                    state.pressure = clamp(state.pressure - pressDrop, 0, 20);
+
+                    // 后遗症：冷却泵故障 + 控制棒卡住
+                    state.scramPenalty = true;
+                    state.scramPenaltyTimer = rand(15, 25);
+                    state.pumpFault = true;
+                    state.pumpFaultTimer = rand(10, 18);
+                    state.rodStuck = true;
+                    state.rodStuckTimer = rand(8, 14);
+
+                    // 随机额外伤害
+                    const extra = rand(0, 30);
+                    if (extra > 20) {
+                        state.temp += rand(10, 30);
+                        addLog('⚠ 紧急停机引发二次热冲击！', 'danger');
+                    }
+
+                    msg =
+                        `🛑 紧急停机: 中子-${Math.round(reduction)}%, 温度-${Math.round(tempDrop)}°C, 压力-${pressDrop.toFixed(1)}MPa (后遗症: 泵故障+棒卡住)`;
+                    state.cooldowns.scram = parseFloat(btnScram.dataset.cooldown);
+                    type = 'danger';
+                    addLog('⚠ 紧急停机已激活！系统进入不稳定状态', 'danger');
+                    break;
+                }
+                default:
+                    return;
+            }
+
+            addLog(msg, type);
+            updateUI();
+        }
+
+        // ---- 结束游戏 ----
+        function endGame(won, message, icon) {
+            if (state.gameOver) return;
+            state.gameOver = true;
+            state.gameWon = won;
+
+            gameOverOverlay.classList.add('show');
+            gameOverBadge.classList.add('show');
+
+            resultIcon.textContent = icon;
+            resultTitle.textContent = won ? '🌟 奇迹般成功' : '💀 反应堆失效';
+            resultTitle.className = `result-title ${won ? 'success' : 'fail'}`;
+            resultSub.textContent = message;
+
+            finalTime.textContent = state.time;
+            finalTemp.textContent = Math.round(state.temp);
+            finalActions.textContent = state.actions;
+
+            if (won) {
+                addLog('🌟 奇迹发生！你成功稳定了反应堆！', 'success');
+            } else {
+                addLog('💀 反应堆失效。有些灾难一旦开始就无法阻止。', 'meltdown');
+            }
+
+            updateUI();
+        }
+
+        // ---- 重新开始 ----
+        function resetGame() {
+            state.temp = 450;
+            state.pressure = 8.0;
+            state.neutron = 70;
+            state.coolant = 70;
+            state.gameOver = false;
+            state.gameWon = false;
+            state.time = 0;
+            state.actions = 0;
+            state.successTimer = 0;
+            state.eventTimer = 0;
+            state.eventInterval = rand(14, 25);
+            state.rodStuck = false;
+            state.rodStuckTimer = 0;
+            state.pumpFault = false;
+            state.pumpFaultTimer = 0;
+            state.leakFault = false;
+            state.leakFaultTimer = 0;
+            state.scramPenalty = false;
+            state.scramPenaltyTimer = 0;
+
+            for (const key in state.cooldowns) {
+                state.cooldowns[key] = 0;
+            }
+
+            state.logEntries = [];
+            addLog('☢ 系统启动 | 石墨反应堆模拟器', 'system');
+            addLog('⚠ 警告: 反应堆已进入不稳定状态', 'warning');
+            addLog('💡 你的任务: 防止灾难发生 (几乎不可能)', 'info');
+            addLog('⚙️ 控制棒插入时可能被蒸汽气泡顶起', 'warning');
+
+            gameOverOverlay.classList.remove('show');
+            gameOverBadge.classList.remove('show');
+
+            updateUI();
+        }
+
+        // ---- 按钮绑定 ----
+        btnRods.addEventListener('click', () => performAction('rods'));
+        btnCooling.addEventListener('click', () => performAction('cooling'));
+        btnVent.addEventListener('click', () => performAction('vent'));
+        btnWater.addEventListener('click', () => performAction('water'));
+        btnScram.addEventListener('click', () => performAction('scram'));
+        restartBtn.addEventListener('click', resetGame);
+
+        // ---- 键盘快捷键 ----
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === '1') performAction('rods');
+            else if (key === '2') performAction('cooling');
+            else if (key === '3') performAction('vent');
+            else if (key === '4') performAction('water');
+            else if (key === '5') performAction('scram');
+            else if (key === 'r' || key === 'R') resetGame();
+        });
+
+        // ---- 游戏循环 ----
+        let lastTime = 0;
+        let accumulator = 0;
+
+        function gameLoop(timestamp) {
+            const delta = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+
+            if (!state.gameOver) {
+                accumulator += delta;
+                while (accumulator >= 1) {
+                    updateGame();
+                    accumulator -= 1;
+                }
+            }
+
+            // 持续更新UI (动画平滑)
+            if (!state.gameOver) {
+                updateUI();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ---- 启动 ----
+        resetGame();
+        addLog('📈 监测系统已启动 | 实时数据流', 'system');
+        addLog('⚠️ 记住: 键盘 1-5 快速操作', 'info');
+
+        updateUI();
+        requestAnimationFrame(gameLoop);
+    </script>
+
+</body>
+</html>
