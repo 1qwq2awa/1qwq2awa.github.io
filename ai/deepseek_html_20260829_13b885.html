@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎮 游戏集合 · 神人网站</title>
+    <link rel="stylesheet" href="css1.css" />
+    <script src="Script1.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <h1>🎮 神人网站</h1>
+        <nav>
+            <ul>
+                <li><a href="#" id="prankTrigger" onclick="prank()">🎯 赞助我们</a></li>
+                <li><a href="we.html">关于我们</a></li>
+                <li><a href="#" id="randomOpen">🎲 随机打开</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <p>可以看到我们制作的有趣项目。<br />（使用了 AI，但创意都是人的 qwq）</p>
+    </section>
+
+    <main class="game-grid">
+        <!-- 所有游戏卡片均使用统一结构 .card -->
+        <article class="card">
+            <h2>分型</h2>
+            <p>方程驱动的美妙分型<br><small>（用户输入的方程可能无法正常渲染）</small></p>
+            <a href="2.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>营销号模拟器</h2>
+            <p>帮助我们生成更构思的营销号语言</p>
+            <a href="3.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>巴别图书馆</h2>
+            <p>任何你要的书，尽在其中，尽可能寻找有趣的书！</p>
+            <a href="4.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>偷偷玩手机！</h2>
+            <p>晚上正是玩手机的时刻</p>
+            <div class="btn-group">
+                <a href="5.html" class="btn btn-dark">开始</a>
+                <a href="5_1.html" class="btn btn-dark">玩七天手机！</a>
+            </div>
+        </article>
+        <article class="card">
+            <h2>盖章</h2>
+            <p><em>你不觉得盖章很好玩吗？</em><br><span class="warning">这个游戏太***不好玩了！！避雷！！</span></p>
+            <a href="7.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>信任危机</h2>
+            <p>你必须做出选择！</p>
+            <a href="8.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>水龙头</h2>
+            <p>洗澡时难免操控一些精密仪器，比如水龙头。</p>
+            <a href="9.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>快→问↓快←答↑</h2>
+            <p>你可能需要巩固常识</p>
+            <a href="10.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>漫游地图</h2>
+            <p>没有用的地图，似乎可以在里面走</p>
+            <a href="11.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>(7×7)+(6+(6+6)) = 67</h2>
+            <p>210+x=x³</p>
+            <a href="12.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>石墨反应堆</h2>
+            <p>我们是不是该放公益广告里</p>
+            <a href="13.html" class="btn btn-dark">开始</a>
+        </article>
+        <article class="card">
+            <h2>简单增量游戏</h2>
+            <p>有没有人可以坚持到反物质宇宙</p>
+            <a href="14.html" class="btn btn-dark">开始</a>
+        </article>
+        <!-- 公益广告区域 -->
+        <article class="card card-public">
+            <h2>🌍 公益广告</h2>
+            <p>如果海里只有垃圾，你还会去海边吗？</p>
+            <a href="world_1.html" class="btn btn-blue">思考</a>
+        </article>
+        <article class="card card-public">
+            <h2>💧 水无穷无尽吗？</h2>
+            <a href="world_2.html" class="btn btn-blue">思考</a>
+        </article>
+        <article class="card card-public">
+            <h2>⚠️ 瘾君子的一生</h2>
+            <a href="6.html" class="btn btn-blue">思考</a>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>（广告位招租）<br>感谢 GitHub 给予的免费静态网站</p>
+        <p>有问题就有问题，我不知道在哪。<br>不要问我，我不会修。</p>
+        <p>（这可能会有玩家的留言）</p>
+        <a href="https://www.bilibili.com/video/BV1GJ411x7h7" class="btn btn-dark" target="_blank" rel="noopener noreferrer">提交建议</a>
+    </footer>
+
+    <script>
+        // 初始化随机打开功能（独立于全局）
+        document.getElementById('randomOpen').addEventListener('click', function (e) {
+            e.preventDefault();
+            const urls = ['4.html', '2.html', '3.html', '5.html', '7.html', '8.html', '9.html', '10.html', '11.html', '12.html', '5_1.html', '13.html', '14.html'];
+            const url = urls[Math.floor(Math.random() * urls.length)];
+            window.open(url, '_blank', 'noopener,noreferrer');
+        });
+
+        // 恶搞彩蛋：点击“赞助我们”触发，并改为更友好的提示（可保留原prank函数）
+        document.getElementById('prankTrigger').addEventListener('click', function (e) {
+            e.preventDefault();
+            if (typeof prank === 'function') {
+                prank(); // 调用原恶搞函数（已优化）
+            } else {
+                alert('🎉 感谢你的支持！彩蛋加载中...');
+            }
+        });
+    </script>
+</body>
+</html>
