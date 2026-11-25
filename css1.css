@@ -129,3 +129,36 @@
     color: #fff;
     border-radius: 10px;
 }
+.ton{
+    padding: 7%;
+    margin: 6%;
+    background-color: orangered;
+    color: #fff;
+    border-radius: 10px;
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px rgb(234, 8, 8);
+}
+.ton_1{
+    padding: 1%;
+    margin: 1%;
+    background-color: orangered;
+    color: #fff;
+    border-radius: 10px;
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px rgb(234, 8, 8);
+}
+.ton_1_1{
+    background-color: rgb(214, 25, 25);
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px rgb(230, 26, 19);
+    background: rgb(220, 95, 11);
+    border: 2px solid rgb(228, 56, 26);
+    border-radius: 4px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    color: red;
+}

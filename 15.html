@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>国战 · Nation War</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: radial-gradient(circle at 50% 0%, #131a26 0%, #07090d 60%);
+    color: #e6edf3;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+  }
+  .hidden { display: none !important; }
+
+  /* ============ 开局界面 ============ */
+  #setup {
+    max-width: 620px; width: 100%;
+    background: #10151f;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.7);
+  }
+  #setup h1 {
+    font-size: 40px; letter-spacing: 14px; text-align: center;
+    background: linear-gradient(180deg,#ffe6a7,#ffb020);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 6px; text-indent: 14px;
+  }
+  #setup .sub {
+    text-align: center; color: #7d8b9e; font-size: 13px; margin-bottom: 24px;
+    letter-spacing: 2px;
+  }
+  .claim-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 10px;
+    background: #0c111a; margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,.05);
+  }
+  .dot { width: 14px; height: 14px; border-radius: 4px; flex: 0 0 auto; }
+  .claim-row .nm { flex: 1; font-size: 15px; }
+  .seg { display: flex; gap: 4px; }
+  .seg button {
+    font-size: 12px; padding: 5px 12px; border-radius: 7px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,.1);
+    background: #151d29; color: #8fa1b8;
+    font-family: inherit; transition: .15s;
+  }
+  .seg button.on {
+    background: linear-gradient(180deg,#ffd166,#f0a500);
+    color: #241a00; border-color: transparent; font-weight: 700;
+  }
+  #startBtn {
+    margin-top: 20px; width: 100%; padding: 14px; border-radius: 11px;
+    border: none; cursor: pointer; font-family: inherit;
+    font-size: 16px; font-weight: 700; letter-spacing: 4px;
+    background: linear-gradient(180deg,#ffd166,#e8a000);
+    color: #241a00;
+    box-shadow: 0 10px 30px rgba(232,160,0,.28);
+    transition: .18s;
+  }
+  #startBtn:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(232,160,0,.4); }
+
+  /* ============ 游戏界面 ============ */
+  #app { display: flex; gap: 16px; max-width: 1120px; width: 100%; align-items: flex-start; }
+  #boardWrap { flex: 0 0 auto; }
+  canvas {
+    display: block; border-radius: 12px; max-width: 100%; height: auto;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.07), 0 24px 70px rgba(0,0,0,.75);
+    cursor: pointer;
+  }
+  #side {
+    flex: 1 1 auto; min-width: 300px; max-width: 400px;
+    display: flex; flex-direction: column; gap: 10px;
+    padding-right: 4px;
+  }
+
+  .card {
+    background: #10151f;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 12px; padding: 12px 14px;
+  }
+  .card-title {
+    font-size: 11px; letter-spacing: 3px; color: #62738a;
+    margin-bottom: 9px; font-weight: 600;
+  }
+  .round-badge {
+    display: inline-block; font-size: 11px; letter-spacing: 2px;
+    background: #1b2432; color: #8fa1b8; padding: 3px 10px; border-radius: 20px;
+  }
+  .cur-nation { font-size: 19px; font-weight: 700; margin-top: 7px; }
+  .cur-nation small { font-size: 11px; color: #62738a; font-weight: 400; margin-left: 6px; }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+  .stat {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 13px; padding: 4px 8px; border-radius: 7px; background: #0b0f16;
+  }
+  .stat span { color: #6f8098; font-size: 11px; }
+  .stat b { color: #dbe6f3; font-variant-numeric: tabular-nums; }
+
+  .btn {
+    width: 100%; padding: 10px 12px; margin-top: 7px; border-radius: 9px;
+    border: 1px solid rgba(255,255,255,.1); background: #18202d;
+    color: #cfdceb; font-family: inherit; font-size: 14px; cursor: pointer;
+    transition: .14s; text-align: left; display: flex; justify-content: space-between;
+  }
+  .btn:hover:not(:disabled) { background: #22304a; border-color: #3b567f; transform: translateX(2px); }
+  .btn:disabled { opacity: .32; cursor: not-allowed; }
+  .btn .tag { font-size: 11px; color: #6f8098; }
+  .btn.wise { border-left: 3px solid #ffd166; }
+  .btn.fool { border-left: 3px solid #ff6b6b; }
+  .btn.war  { border-left: 3px solid #ff4d4d; }
+  .btn.exp  { border-left: 3px solid #3ddc84; }
+  .btn.res  { border-left: 3px solid #4d9fff; }
+  .btn.skill{ border-left: 3px solid #ffd166; }
+  .hint { font-size: 12px; color: #8fa1b8; line-height: 1.6; margin-top: 4px; }
+
+  /* 科技分支 / 技能条目 */
+  .branch {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 9px; background: #0b0f16;
+    border: 1px solid rgba(255,255,255,.06); margin-top: 6px;
+    transition: .14s;
+  }
+  .branch.clickable { cursor: pointer; }
+  .branch.clickable:hover { background: #18202d; border-color: #3b567f; transform: translateX(2px); }
+  .branch.maxed { opacity: .42; }
+  .branch .bi { font-size: 16px; width: 20px; text-align: center; flex: 0 0 auto; }
+  .branch .bmain { flex: 1; min-width: 0; }
+  .branch .bname { font-size: 13px; font-weight: 600; }
+  .branch .blevel { font-size: 11px; color: #6f8098; margin-top: 1px; }
+  .branch .bnext { text-align: right; font-size: 11px; color: #8fa1b8; flex: 0 0 auto; line-height: 1.45; }
+  .branch .bnext b { color: #ffd166; }
+  .branch .bnext .cd { color: #ff6b6b; font-weight: 700; }
+  .branch .bnext .ok { color: #3ddc84; font-weight: 700; }
+
+  #techList .trow {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; padding: 3px 2px;
+  }
+  #techList .trow .tl { color: #cfdceb; }
+  #techList .trow .dots { letter-spacing: 2px; font-size: 10px; }
+
+  #scoreboard { display: flex; flex-direction: column; gap: 5px; }
+  .sb-row {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; padding: 4px 7px; border-radius: 7px; background: #0b0f16;
+  }
+  .sb-row.dead { opacity: .3; text-decoration: line-through; }
+  .sb-row .dot { width: 10px; height: 10px; border-radius: 3px; }
+  .sb-row .nm { width: 40px; color: #cfdceb; }
+  .sb-row .v { color: #8fa1b8; font-variant-numeric: tabular-nums; }
+  .sb-row .v b { color: #dbe6f3; }
+
+  #log {
+    max-height: 160px; overflow-y: auto; font-size: 12px; line-height: 1.65;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  #log::-webkit-scrollbar { width: 5px; }
+  #log::-webkit-scrollbar-thumb { background: #2a3648; border-radius: 3px; }
+  .log-line { color: #8fa1b8; }
+  .log-line.round { color: #ffd166; font-weight: 700; letter-spacing: 1px; margin-top: 4px; }
+  .log-line.good { color: #3ddc84; }
+  .log-line.bad { color: #ff6b6b; }
+  .log-line.war { color: #ff9f43; font-weight: 600; }
+  .log-line.skill { color: #ffd166; font-weight: 600; }
+
+  /* 结束遮罩 */
+  #overlay {
+    position: fixed; inset: 0; background: rgba(4,6,10,.86);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 99; backdrop-filter: blur(6px);
+    animation: fadein .4s;
+  }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+  #overlay .box { text-align: center; }
+  #overlay h2 {
+    font-size: 34px; letter-spacing: 6px;
+    background: linear-gradient(180deg,#ffe6a7,#ffb020);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 18px;
+  }
+  #overlay button {
+    padding: 12px 40px; border-radius: 11px; border: none; cursor: pointer;
+    font-family: inherit; font-size: 15px; font-weight: 700; letter-spacing: 3px;
+    background: linear-gradient(180deg,#ffd166,#e8a000); color: #241a00;
+  }
+
+  @media (max-width: 900px) {
+    #app { flex-direction: column; align-items: stretch; }
+    #side { max-width: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ 开局 ============ -->
+<div id="setup">
+  <h1>国战</h1>
+  <div class="sub">SELECT YOUR NATION</div>
+  <div id="claimList"></div>
+  <button id="startBtn">开 始 征 战</button>
+</div>
+
+<!-- ============ 游戏 ============ -->
+<div id="app" class="hidden">
+  <div id="boardWrap"><canvas id="board"></canvas></div>
+  <aside id="side">
+    <div class="card">
+      <div class="round-badge" id="roundBadge">第 1 回合</div>
+      <div class="cur-nation" id="curNation">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">当前国家</div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">科技路线</div>
+      <div id="techList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">行动</div>
+      <div id="actionArea"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">列国形势</div>
+      <div id="scoreboard"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">战报</div>
+      <div id="log"></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* =====================================================
+   常量配置
+   ===================================================== */
+const GRID_W = 20, GRID_H = 14, CELL = 34, GAP = 3;
+const CW = GRID_W * CELL, CH = GRID_H * CELL;
+
+/* 科技分支：每条路线走到尽头解锁技能 */
+const BRANCHES = [
+  {
+    id: 'military', name: '军事', icon: '⚔', color: '#ff6b6b',
+    levels: [
+      { name: '冷兵器改良', cost: 30,  effect: '战力 +8%' },
+      { name: '火药应用',   cost: 70,  effect: '战力 +18%' },
+      { name: '现代军事',   cost: 140, effect: '战力 +30%，解锁【闪电战】', skill: 'blitz' },
+    ],
+  },
+  {
+    id: 'nuclear', name: '核能', icon: '☢', color: '#ffd166',
+    levels: [
+      { name: '基础核科技', cost: 80,  effect: '解锁【基础核污染】', skill: 'pollute' },
+      { name: '高级核科技', cost: 160, effect: '解锁【普通核弹】',   skill: 'nuke' },
+    ],
+  },
+  {
+    id: 'economy', name: '经济', icon: '⚒', color: '#3ddc84',
+    levels: [
+      { name: '农业改良',   cost: 30,  effect: '每回合收入 +8' },
+      { name: '工场手工业', cost: 70,  effect: '每回合收入 +18' },
+      { name: '工业革命',   cost: 140, effect: '每回合收入 +35，解锁【大生产】', skill: 'massproduce' },
+    ],
+  },
+  {
+    id: 'intel', name: '情报', icon: '📡', color: '#4d9fff',
+    levels: [
+      { name: '文字统一', cost: 40,  effect: '每回合收入 +4' },
+      { name: '印刷术',   cost: 80,  effect: '解锁【离间计】', skill: 'sow' },
+      { name: '信息网络', cost: 150, effect: '解锁【舆论战】', skill: 'propaganda' },
+    ],
+  },
+];
+
+/* 技能定义 */
+const SKILLS = {
+  blitz:       { name: '闪电战',      icon: '⚡', cost: 40, cd: 3, target: 'adjacent',
+                 desc: '对相邻敌国发动必胜进攻，夺取一块领土' },
+  pollute:     { name: '基础核污染',  icon: '☣', cost: 35, cd: 3, target: 'any',
+                 desc: '目标国力 -35，下回合收入减半' },
+  nuke:        { name: '普通核弹',    icon: '💥', cost: 80, cd: 5, target: 'any',
+                 desc: '目标国力 -90，随机摧毁一块领土' },
+  massproduce: { name: '大生产',      icon: '🏭', cost: 0,  cd: 3, target: 'self',
+                 desc: '立即获得 100 国力' },
+  sow:         { name: '离间计',      icon: '🕵', cost: 40, cd: 4, target: 'any',
+                 desc: '目标随机失去 1 名宰相' },
+  propaganda:  { name: '舆论战',      icon: '📢', cost: 60, cd: 5, target: 'any',
+                 desc: '目标国力 -40，且下回合无法行动' },
+};
+
+const NATION_DATA = [
+  { name: '华夏', color: '#ff5e57' },
+  { name: '罗马', color: '#4d9fff' },
+  { name: '波斯', color: '#b06bff' },
+  { name: '埃及', color: '#ffb020' },
+  { name: '印度', color: '#22d3a5' },
+  { name: '玛雅', color: '#ff5fa2' },
+];
+
+const STARTS = [
+  { x: 1, y: 1 }, { x: 16, y: 1 },
+  { x: 1, y: 11 }, { x: 16, y: 11 },
+  { x: 8, y: 0 }, { x: 8, y: 12 },
+];
+
+/* =====================================================
+   全局状态
+   ===================================================== */
+const canvas = document.getElementById('board');
+canvas.width = CW; canvas.height = CH;
+const ctx = canvas.getContext('2d');
+
+let nations = [];
+let grid = [];
+let round = 1;
+let turnOrder = [];
+let turnPtr = 0;
+let current = null;
+let phase = 'idle';          // selectMinister | selectAction | selectResearch | selectSkill | selectTarget | idle | over
+let pendingAction = null;    // 'expand' | 'war' | { type:'skill', id }
+let highlight = new Set();
+let highlightColor = '#3ddc84';
+let hoverCell = null;
+let controllers = ['human', 'ai', 'ai', 'ai', 'ai', 'ai'];
+
+const logEl = document.getElementById('log');
+const statsEl = document.getElementById('stats');
+const techListEl = document.getElementById('techList');
+const actionEl = document.getElementById('actionArea');
+const sbEl = document.getElementById('scoreboard');
+const roundBadge = document.getElementById('roundBadge');
+const curNationEl = document.getElementById('curNation');
+
+/* =====================================================
+   工具函数
+   ===================================================== */
+function log(msg, cls = '') {
+  const d = document.createElement('div');
+  d.className = 'log-line ' + cls;
+  d.textContent = msg;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+  while (logEl.children.length > 220) logEl.removeChild(logEl.firstChild);
+}
+
+function key(x, y) { return x + ',' + y; }
+function parseKey(k) { const p = k.split(','); return [+p[0], +p[1]]; }
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+function neighborCells(set) {
+  const out = [], seen = new Set();
+  for (const k of set) {
+    const [x, y] = parseKey(k);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) continue;
+      const nk = key(nx, ny);
+      if (set.has(nk) || seen.has(nk)) continue;
+      seen.add(nk);
+      out.push([nx, ny]);
+    }
+  }
+  return out;
+}
+
+function expandTargets(n) {
+  return neighborCells(n.territory).filter(([x, y]) => grid[y][x] === null);
+}
+function warTargets(n) {
+  return neighborCells(n.territory).filter(([x, y]) => grid[y][x] !== null && grid[y][x] !== n.id);
+}
+function adjacentTo(a, b) {
+  for (const k of b.territory) {
+    const [x, y] = parseKey(k);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) continue;
+      if (grid[ny][nx] === a.id) return true;
+    }
+  }
+  return false;
+}
+function pickAdjacentTerritory(atk, def) {
+  const cands = [];
+  for (const k of def.territory) {
+    const [tx, ty] = parseKey(k);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = tx + dx, ny = ty + dy;
+      if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) continue;
+      if (grid[ny][nx] === atk.id) { cands.push(k); break; }
+    }
+  }
+  return cands.length ? rand(cands) : null;
+}
+
+/* 科技带来的加成 */
+function techTotal(n) {
+  return Object.values(n.tech).reduce((a, b) => a + b, 0);
+}
+function militaryBonus(n) {
+  const lv = n.tech.military;
+  return lv >= 3 ? 0.30 : lv === 2 ? 0.18 : lv === 1 ? 0.08 : 0;
+}
+function techIncomeBonus(n) {
+  const e = n.tech.economy;
+  let b = e >= 3 ? 35 : e === 2 ? 18 : e === 1 ? 8 : 0;
+  b += n.tech.intel * 4;
+  return b;
+}
+
+/* 战力 */
+function basePower(n) {
+  return n.power * 0.6 + n.territory.size * 6 + techTotal(n) * 8;
+}
+function attackPower(n) {
+  let p = basePower(n) * (1 + militaryBonus(n));
+  if (n.minister === 'wise') p *= 1.25;
+  else if (n.minister === 'fool') p *= 1.55;
+  return p;
+}
+function defensePower(n) {
+  return basePower(n) * (1 + militaryBonus(n)) * 1.2;
+}
+
+/* 研究费用（受主政影响） */
+function researchCost(n, branchId, level) {
+  const br = BRANCHES.find(b => b.id === branchId);
+  const base = br.levels[level].cost;
+  if (n.minister === 'wise') return Math.round(base * 0.75);
+  if (n.minister === 'fool') return Math.round(base * 0.5);
+  return base;
+}
+
+/* =====================================================
+   开局界面
+   ===================================================== */
+function buildClaimList() {
+  const wrap = document.getElementById('claimList');
+  wrap.innerHTML = '';
+  NATION_DATA.forEach((d, i) => {
+    const row = document.createElement('div');
+    row.className = 'claim-row';
+    row.innerHTML = `
+      <div class="dot" style="background:${d.color}"></div>
+      <div class="nm">${d.name}</div>
+      <div class="seg" data-i="${i}">
+        <button data-v="human" class="${controllers[i] === 'human' ? 'on' : ''}">玩家</button>
+        <button data-v="ai" class="${controllers[i] === 'ai' ? 'on' : ''}">电脑</button>
+      </div>`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.seg').forEach(seg => {
+    seg.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const i = +seg.dataset.i;
+      controllers[i] = b.dataset.v;
+      seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    });
+  });
+}
+buildClaimList();
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  startGame();
+});
+
+/* =====================================================
+   游戏初始化
+   ===================================================== */
+function startGame() {
+  grid = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
+  nations = [];
+  logEl.innerHTML = '';
+
+  NATION_DATA.forEach((d, i) => {
+    const n = {
+      id: i, name: d.name, color: d.color,
+      isAI: controllers[i] === 'ai',
+      power: 100,
+      wise: 2, fool: 2,
+      tech: { military: 0, nuclear: 0, economy: 0, intel: 0 },
+      skills: {},              // skillId -> 剩余冷却
+      incomePenalty: 0,        // 收入减半回合数
+      skipTurns: 0,            // 跳过回合数
+      territory: new Set(),
+      alive: true,
+      minister: null,
+    };
+    const s = STARTS[i];
+    for (let dy = 0; dy < 2; dy++) {
+      for (let dx = 0; dx < 3; dx++) {
+        const x = s.x + dx, y = s.y + dy;
+        if (x < GRID_W && y < GRID_H && grid[y][x] === null) {
+          grid[y][x] = i;
+          n.territory.add(key(x, y));
+        }
+      }
+    }
+    nations.push(n);
+  });
+
+  round = 1;
+  startRound();
+}
+
+/* =====================================================
+   回合流程
+   ===================================================== */
+function startRound() {
+  log(`—— 第 ${round} 回合 ——`, 'round');
+  turnOrder = nations.filter(n => n.alive).map(n => n.id);
+  turnPtr = 0;
+  draw();
+  nextTurn();
+}
+
+function nextTurn() {
+  while (turnPtr < turnOrder.length && !nations[turnOrder[turnPtr]].alive) turnPtr++;
+  if (turnPtr >= turnOrder.length) { endRound(); return; }
+
+  current = nations[turnOrder[turnPtr]];
+  current.minister = null;
+  highlight.clear();
+  hoverCell = null;
+  pendingAction = null;
+
+  // 舆论战：跳过回合
+  if (current.skipTurns > 0) {
+    current.skipTurns--;
+    phase = 'idle';
+    log(`📢 ${current.name} 陷入舆论混乱，本回合无法行动`, 'bad');
+    updateUI(); draw();
+    setTimeout(endTurn, 820);
+    return;
+  }
+
+  if (current.wise === 0 && current.fool === 0) {
+    phase = 'selectAction';
+    updateUI(); draw();
+    if (current.isAI) setTimeout(aiAction, 620);
+  } else {
+    phase = 'selectMinister';
+    updateUI(); draw();
+    if (current.isAI) setTimeout(aiMinister, 650);
+  }
+}
+
+function endTurn() {
+  turnPtr++;
+  nextTurn();
+}
+
+function endRound() {
+  for (const n of nations) {
+    if (!n.alive) continue;
+
+    // 技能冷却递减
+    for (const id in n.skills) {
+      if (n.skills[id] > 0) n.skills[id]--;
+    }
+
+    // 收入
+    let income = n.territory.size * 2 + techTotal(n) * 3 + techIncomeBonus(n);
+    if (n.incomePenalty > 0) {
+      income = Math.floor(income / 2);
+      n.incomePenalty--;
+    }
+    n.power += income;
+
+    // 补充宰相
+    const wiseChance = Math.min(0.85, 0.45 + techTotal(n) * 0.03);
+    if (Math.random() < wiseChance) n.wise = Math.min(5, n.wise + 1);
+    else n.fool = Math.min(5, n.fool + 1);
+  }
+
+  checkDeaths();
+  const alive = nations.filter(n => n.alive);
+  if (alive.length <= 1) { gameOver(alive[0] || null); return; }
+
+  round++;
+  startRound();
+}
+
+function checkDeaths() {
+  for (const n of nations) {
+    if (!n.alive) continue;
+    if (n.territory.size === 0 || n.power <= 0) {
+      n.alive = false;
+      n.power = Math.max(0, n.power);
+      for (const k of n.territory) {
+        const [x, y] = parseKey(k);
+        grid[y][x] = null;
+      }
+      n.territory.clear();
+      log(`💀 ${n.name} 亡国了！`, 'bad');
+    }
+  }
+}
+
+function finishAction() {
+  highlight.clear();
+  hoverCell = null;
+  pendingAction = null;
+  phase = 'idle';
+  checkDeaths();
+  updateUI();
+  draw();
+
+  const alive = nations.filter(n => n.alive);
+  if (alive.length <= 1) {
+    setTimeout(() => gameOver(alive[0] || null), 650);
+    return;
+  }
+  setTimeout(endTurn, 620);
+}
+
+/* =====================================================
+   选宰相
+   ===================================================== */
+function selectMinister(type) {
+  const n = current;
+  if (!n || !n.alive) return;
+  if (type === 'wise' && n.wise <= 0) return;
+  if (type === 'fool' && n.fool <= 0) return;
+
+  if (type === 'wise') n.wise--; else n.fool--;
+  n.minister = type;
+  phase = 'selectAction';
+  log(`${n.name} 启用【${type === 'wise' ? '明君' : '昏君'}】主政`, type === 'wise' ? 'good' : '');
+  updateUI(); draw();
+
+  if (n.isAI) setTimeout(aiAction, 620);
+}
+
+/* =====================================================
+   开疆扩土 / 开战
+   ===================================================== */
+function doExpand(x, y) {
+  const n = current;
+  let cost = n.minister === 'wise' ? 8 : n.minister === 'fool' ? 6 : 12;
+  if (n.power < cost) { log(`${n.name} 国力不足，无法扩张。`, 'bad'); finishAction(); return; }
+
+  n.power -= cost;
+  const success = !(n.minister === 'fool' && Math.random() < 0.30);
+
+  if (success) {
+    grid[y][x] = n.id;
+    n.territory.add(key(x, y));
+    log(`${n.name} 开疆扩土，占据 (${x},${y})`, 'good');
+  } else {
+    log(`${n.name} 昏君挥霍无度，扩张计划破产！`, 'bad');
+  }
+  finishAction();
+}
+
+function doWar(x, y) {
+  const atk = current;
+  const defId = grid[y][x];
+  const def = nations[defId];
+  if (!def || !def.alive) { finishAction(); return; }
+
+  const atkP = attackPower(atk);
+  const defP = defensePower(def);
+
+  log(`⚔ ${atk.name} 向 ${def.name} 宣战！`, 'war');
+
+  let win;
+  if (atk.minister === 'fool' && Math.random() < 0.30) {
+    win = false;
+    atk.power -= 10;
+    log(`昏君胡乱指挥，${atk.name} 大军哗变，不战自溃！`, 'bad');
+  } else {
+    const p = atkP / (atkP + defP);
+    win = Math.random() < p;
+  }
+
+  if (win) {
+    const k = pickAdjacentTerritory(atk, def);
+    if (k) {
+      const [tx, ty] = parseKey(k);
+      def.territory.delete(k);
+      grid[ty][tx] = atk.id;
+      atk.territory.add(k);
+      log(`${atk.name} 大破 ${def.name}，夺取领土 (${tx},${ty})！`, 'good');
+    }
+    atk.power -= 10;
+    def.power -= 20;
+  } else {
+    log(`${atk.name} 进攻受挫，损兵折将。`, 'bad');
+    atk.power -= 22;
+    def.power -= 5;
+  }
+  finishAction();
+}
+
+/* =====================================================
+   研究（选择分支）
+   ===================================================== */
+function doResearch(branchId) {
+  const n = current;
+  const br = BRANCHES.find(b => b.id === branchId);
+  const lv = n.tech[branchId];
+  if (lv >= br.levels.length) { finishAction(); return; }
+
+  const cost = researchCost(n, branchId, lv);
+  if (n.power < cost) { log(`${n.name} 国力不足以研究该科技。`, 'bad'); finishAction(); return; }
+
+  n.power -= cost;
+
+  if (n.minister === 'fool' && Math.random() < 0.35) {
+    log(`${n.name} 昏君好大喜功，【${br.name}】研究失败，国库空虚。`, 'bad');
+    finishAction();
+    return;
+  }
+
+  n.tech[branchId]++;
+  const lvDef = br.levels[lv];
+  log(`${n.name} 科技突破 → 【${lvDef.name}】`, 'good');
+
+  if (lvDef.skill) {
+    const sk = SKILLS[lvDef.skill];
+    n.skills[lvDef.skill] = 0;
+    log(`✨ ${n.name} 解锁技能【${sk.icon} ${sk.name}】！`, 'skill');
+  }
+  finishAction();
+}
+
+/* =====================================================
+   技能
+   ===================================================== */
+function executeSkill(id, target) {
+  const n = current;
+  const sk = SKILLS[id];
+  if (!(id in n.skills) || n.skills[id] > 0) return;
+
+  if (n.power < sk.cost) {
+    log(`${n.name} 国力不足，无法发动【${sk.name}】`, 'bad');
+    finishAction();
+    return;
+  }
+
+  n.power -= sk.cost;
+  n.skills[id] = sk.cd;
+  log(`${n.name} 发动技能【${sk.icon} ${sk.name}】`, 'skill');
+
+  switch (id) {
+    case 'blitz': {
+      if (target) {
+        const k = pickAdjacentTerritory(n, target);
+        if (k) {
+          const [tx, ty] = parseKey(k);
+          target.territory.delete(k);
+          grid[ty][tx] = n.id;
+          n.territory.add(k);
+          target.power -= 15;
+          log(`⚡ 闪电战奏效！${n.name} 夺取 ${target.name} 的领土 (${tx},${ty})`, 'war');
+        } else {
+          log(`⚡ 闪电战未找到接壤目标`, 'bad');
+        }
+      }
+      break;
+    }
+    case 'pollute': {
+      if (target) {
+        target.power -= 35;
+        target.incomePenalty += 1;
+        log(`☣ ${target.name} 遭受核污染，国力 -35，下回合收入减半`, 'bad');
+      }
+      break;
+    }
+    case 'nuke': {
+      if (target) {
+        target.power -= 90;
+        const arr = [...target.territory];
+        if (arr.length) {
+          const k = rand(arr);
+          const [tx, ty] = parseKey(k);
+          target.territory.delete(k);
+          grid[ty][tx] = null;
+          log(`💥 核弹夷平 ${target.name} 领土 (${tx},${ty})，国力 -90`, 'bad');
+        }
+      }
+      break;
+    }
+    case 'massproduce': {
+      n.power += 100;
+      log(`🏭 大生产运动，${n.name} 国力 +100`, 'good');
+      break;
+    }
+    case 'sow': {
+      if (target) {
+        if (target.wise > 0 && (target.fool === 0 || Math.random() < 0.5)) {
+          target.wise--;
+          log(`🕵 离间计得手，${target.name} 失去 1 名明君`, 'bad');
+        } else if (target.fool > 0) {
+          target.fool--;
+          log(`🕵 离间计得手，${target.name} 失去 1 名昏君`, 'bad');
+        } else {
+          log(`🕵 离间计未奏效`, '');
+        }
+      }
+      break;
+    }
+    case 'propaganda': {
+      if (target) {
+        target.power -= 40;
+        target.skipTurns += 1;
+        log(`📢 舆论战奏效，${target.name} 国力 -40，下回合无法行动`, 'bad');
+      }
+      break;
+    }
+  }
+  finishAction();
+}
+
+/* =====================================================
+   AI
+   ===================================================== */
+function aiMinister() {
+  const n = current;
+  if (!n || !n.alive) return;
+
+  const lowPower = n.power < 70;
+  const canWise = n.wise > 0, canFool = n.fool > 0;
+  if (!canWise && !canFool) { aiAction(); return; }
+
+  let type;
+  if (lowPower && canWise) type = 'wise';
+  else if (!canWise) type = 'fool';
+  else if (!canFool) type = 'wise';
+  else type = Math.random() < 0.55 ? 'wise' : 'fool';
+
+  selectMinister(type);
+}
+
+function aiTrySkill() {
+  const n = current;
+  const ready = Object.keys(n.skills).filter(id => n.skills[id] === 0 && n.power >= SKILLS[id].cost + 15);
+  if (!ready.length) return false;
+
+  const id = rand(ready);
+  const sk = SKILLS[id];
+
+  if (sk.target === 'self') {
+    executeSkill(id, null);
+    return true;
+  }
+
+  let cands = nations.filter(t => t.alive && t.id !== n.id);
+  if (sk.target === 'adjacent') cands = cands.filter(t => adjacentTo(n, t));
+  if (!cands.length) return false;
+
+  cands.sort((a, b) => a.power - b.power);
+  executeSkill(id, cands[0]);
+  return true;
+}
+
+function aiAction() {
+  const n = current;
+  if (!n || !n.alive || phase !== 'selectAction') return;
+
+  // 优先使用技能
+  if (aiTrySkill()) return;
+
+  const exps = expandTargets(n);
+  const wars = warTargets(n);
+
+  let weakest = null, weakestP = Infinity;
+  for (const [x, y] of wars) {
+    const d = nations[grid[y][x]];
+    if (!d || !d.alive) continue;
+    const p = defensePower(d);
+    if (p < weakestP) { weakestP = p; weakest = [x, y]; }
+  }
+
+  const atkP = attackPower(n);
+
+  // 可研究的分支
+  const availRes = BRANCHES.filter(b => {
+    const lv = n.tech[b.id];
+    return lv < b.levels.length && n.power >= researchCost(n, b.id, lv);
+  });
+
+  let action = null;
+  if (availRes.length && n.power > 160) action = 'research';
+  else if (weakest && atkP > weakestP * 1.2 && n.power > 80) action = 'war';
+  else if (exps.length && n.power > 40) action = 'expand';
+  else if (availRes.length) action = 'research';
+  else if (exps.length) action = 'expand';
+  else if (weakest) action = 'war';
+
+  if (action === 'research') {
+    doResearch(rand(availRes).id);
+  } else if (action === 'expand') {
+    const t = rand(exps);
+    doExpand(t[0], t[1]);
+  } else if (action === 'war') {
+    doWar(weakest[0], weakest[1]);
+  } else {
+    finishAction();
+  }
+}
+
+/* =====================================================
+   渲染
+   ===================================================== */
+function draw() {
+  ctx.fillStyle = '#0b0f16';
+  ctx.fillRect(0, 0, CW, CH);
+
+  for (let y = 0; y < GRID_H; y++) {
+    for (let x = 0; x < GRID_W; x++) {
+      const px = x * CELL + GAP / 2;
+      const py = y * CELL + GAP / 2;
+      const size = CELL - GAP;
+      const owner = grid[y][x];
+
+      if (owner === null) {
+        roundRect(ctx, px, py, size, size, 5);
+        ctx.fillStyle = '#151c27';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.035)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        const nat = nations[owner];
+        roundRect(ctx, px, py, size, size, 5);
+        ctx.fillStyle = nat.color;
+        ctx.fill();
+        roundRect(ctx, px + 2.5, py + 2.5, size - 5, size - 5, 4);
+        ctx.fillStyle = 'rgba(255,255,255,.13)';
+        ctx.fill();
+      }
+
+      if (highlight.has(key(x, y))) {
+        roundRect(ctx, px, py, size, size, 5);
+        ctx.strokeStyle = highlightColor;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+      if (hoverCell && hoverCell.x === x && hoverCell.y === y && highlight.has(key(x, y))) {
+        roundRect(ctx, px, py, size, size, 5);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+/* =====================================================
+   UI 更新
+   ===================================================== */
+function updateUI() {
+  roundBadge.textContent = `第 ${round} 回合`;
+
+  const n = current;
+  if (!n) { curNationEl.textContent = '—'; return; }
+
+  curNationEl.innerHTML = `<span style="color:${n.color}">${n.name}</span>` +
+    (n.isAI ? `<small>电脑</small>` : `<small>玩家</small>`);
+
+  const minName = n.minister === 'wise' ? '明君' : n.minister === 'fool' ? '昏君' : '—';
+  statsEl.innerHTML = `
+    <div class="stat"><span>国力</span><b>${Math.round(n.power)}</b></div>
+    <div class="stat"><span>领土</span><b>${n.territory.size}</b></div>
+    <div class="stat"><span>主政</span><b>${minName}</b></div>
+    <div class="stat"><span>科技等级</span><b>${techTotal(n)}</b></div>
+    <div class="stat"><span>明君</span><b>${n.wise}</b></div>
+    <div class="stat"><span>昏君</span><b>${n.fool}</b></div>
+  `;
+
+  renderTechList();
+  renderActions();
+  renderScoreboard();
+}
+
+function renderTechList() {
+  const n = current;
+  if (!n) { techListEl.innerHTML = ''; return; }
+  techListEl.innerHTML = BRANCHES.map(b => {
+    const lv = n.tech[b.id], max = b.levels.length;
+    let dots = '';
+    for (let i = 0; i < max; i++) {
+      dots += `<span style="color:${i < lv ? b.color : '#2a3648'}">●</span>`;
+    }
+    return `<div class="trow">
+      <span class="tl">${b.icon} ${b.name}</span>
+      <span class="dots">${dots}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderActions() {
+  const n = current;
+  actionEl.innerHTML = '';
+  if (!n || phase === 'over') return;
+
+  if (n.isAI && phase !== 'idle') {
+    actionEl.innerHTML = `<div class="hint">${n.name} 正在谋划……</div>`;
+    return;
+  }
+
+  if (phase === 'selectMinister') {
+    const b1 = document.createElement('button');
+    b1.className = 'btn wise';
+    b1.innerHTML = `<span>启用明君</span><span class="tag">+25% 战力 · 研究省 25%</span>`;
+    b1.disabled = n.wise <= 0;
+    b1.onclick = () => selectMinister('wise');
+
+    const b2 = document.createElement('button');
+    b2.className = 'btn fool';
+    b2.innerHTML = `<span>启用昏君</span><span class="tag">+55% 战力 · 但有风险</span>`;
+    b2.disabled = n.fool <= 0;
+    b2.onclick = () => selectMinister('fool');
+
+    actionEl.append(b1, b2);
+    actionEl.insertAdjacentHTML('beforeend',
+      `<div class="hint">明君稳中求胜；昏君扩张迅猛，却可能哗变误国。</div>`);
+    return;
+  }
+
+  if (phase === 'selectAction') {
+    const exps = expandTargets(n);
+    const wars = warTargets(n);
+    const canResearch = BRANCHES.some(b =>
+      n.tech[b.id] < b.levels.length && n.power >= researchCost(n, b.id, n.tech[b.id]));
+    const hasSkill = Object.keys(n.skills).length > 0;
+
+    const be = document.createElement('button');
+    be.className = 'btn exp';
+    be.innerHTML = `<span>开疆扩土</span><span class="tag">${exps.length} 处可占 · 约 ${n.minister === 'wise' ? 8 : n.minister === 'fool' ? 6 : 12} 国力</span>`;
+    be.disabled = exps.length === 0;
+    be.onclick = () => beginTarget('expand');
+
+    const bw = document.createElement('button');
+    bw.className = 'btn war';
+    bw.innerHTML = `<span>开战</span><span class="tag">${wars.length} 处边境接壤</span>`;
+    bw.disabled = wars.length === 0;
+    bw.onclick = () => beginTarget('war');
+
+    const br = document.createElement('button');
+    br.className = 'btn res';
+    br.innerHTML = `<span>研究科技</span><span class="tag">${canResearch ? '选择路线' : '国力不足 / 已满级'}</span>`;
+    br.disabled = !canResearch;
+    br.onclick = () => { phase = 'selectResearch'; updateUI(); };
+
+    const bs = document.createElement('button');
+    bs.className = 'btn skill';
+    bs.innerHTML = `<span>使用技能</span><span class="tag">${hasSkill ? Object.keys(n.skills).length + ' 项已解锁' : '尚未解锁'}</span>`;
+    bs.disabled = !hasSkill;
+    bs.onclick = () => { phase = 'selectSkill'; updateUI(); };
+
+    actionEl.append(be, bw, br, bs);
+    return;
+  }
+
+  if (phase === 'selectResearch') {
+    actionEl.innerHTML = `<div class="hint">选择一条科技路线进行突破：</div>`;
+
+    BRANCHES.forEach(b => {
+      const lv = n.tech[b.id];
+      const maxed = lv >= b.levels.length;
+      const div = document.createElement('div');
+      div.className = 'branch' + (maxed ? ' maxed' : '');
+      if (maxed) {
+        div.innerHTML = `<div class="bi">${b.icon}</div>
+          <div class="bmain"><div class="bname">${b.name}</div>
+          <div class="blevel">已满级</div></div>`;
+      } else {
+        const next = b.levels[lv];
+        const cost = researchCost(n, b.id, lv);
+        const afford = n.power >= cost;
+        div.className += ' clickable';
+        div.innerHTML = `<div class="bi">${b.icon}</div>
+          <div class="bmain">
+            <div class="bname">${b.name} Lv.${lv + 1}</div>
+            <div class="blevel">${next.name}</div>
+          </div>
+          <div class="bnext">${next.effect}<br><b style="color:${afford ? '#ffd166' : '#ff6b6b'}">${cost} 国力</b></div>`;
+        if (afford) div.onclick = () => doResearch(b.id);
+        else div.onclick = null;
+      }
+      actionEl.appendChild(div);
+    });
+
+    const back = document.createElement('button');
+    back.className = 'btn';
+    back.innerHTML = `<span>返回</span>`;
+    back.onclick = () => { phase = 'selectAction'; updateUI(); };
+    actionEl.appendChild(back);
+    return;
+  }
+
+  if (phase === 'selectSkill') {
+    actionEl.innerHTML = `<div class="hint">选择要发动的技能：</div>`;
+    const ids = Object.keys(n.skills);
+
+    ids.forEach(id => {
+      const sk = SKILLS[id];
+      const cd = n.skills[id];
+      const ready = cd === 0 && n.power >= sk.cost;
+      const div = document.createElement('div');
+      div.className = 'branch' + (ready ? ' clickable' : ' maxed');
+      const status = cd > 0
+        ? `<span class="cd">冷却 ${cd}</span>`
+        : (n.power >= sk.cost ? `<span class="ok">可用</span>` : `<span class="cd">国力不足</span>`);
+      div.innerHTML = `<div class="bi">${sk.icon}</div>
+        <div class="bmain">
+          <div class="bname">${sk.name}</div>
+          <div class="blevel">${sk.desc}</div>
+        </div>
+        <div class="bnext">${status}<br><b>${sk.cost} 国力</b></div>`;
+      if (ready) {
+        div.onclick = () => {
+          if (sk.target === 'self') executeSkill(id, null);
+          else beginSkillTarget(id);
+        };
+      }
+      actionEl.appendChild(div);
+    });
+
+    const back = document.createElement('button');
+    back.className = 'btn';
+    back.innerHTML = `<span>返回</span>`;
+    back.onclick = () => { phase = 'selectAction'; updateUI(); };
+    actionEl.appendChild(back);
+    return;
+  }
+
+  if (phase === 'selectTarget') {
+    let tip = '请在右侧地图上点击高亮的格子选择目标。';
+    if (pendingAction && pendingAction.type === 'skill') {
+      tip = `选择【${SKILLS[pendingAction.id].name}】的目标国家。`;
+    }
+    actionEl.innerHTML = `<div class="hint">${tip}</div>`;
+    const bc = document.createElement('button');
+    bc.className = 'btn';
+    bc.innerHTML = `<span>取消</span>`;
+    bc.onclick = () => {
+      highlight.clear();
+      pendingAction = null;
+      phase = 'selectAction';
+      updateUI(); draw();
+    };
+    actionEl.appendChild(bc);
+  }
+}
+
+function renderScoreboard() {
+  sbEl.innerHTML = '';
+  nations.forEach(n => {
+    const row = document.createElement('div');
+    row.className = 'sb-row' + (n.alive ? '' : ' dead');
+    row.innerHTML = `
+      <div class="dot" style="background:${n.color}"></div>
+      <div class="nm">${n.name}</div>
+      <div class="v">国力 <b>${Math.round(n.power)}</b></div>
+      <div class="v">地 <b>${n.territory.size}</b></div>
+      <div class="v">科 <b>${techTotal(n)}</b></div>`;
+    sbEl.appendChild(row);
+  });
+}
+
+/* =====================================================
+   目标选择
+   ===================================================== */
+function beginTarget(action) {
+  const n = current;
+  pendingAction = action;
+  phase = 'selectTarget';
+  highlight.clear();
+
+  if (action === 'expand') {
+    highlightColor = '#3ddc84';
+    expandTargets(n).forEach(([x, y]) => highlight.add(key(x, y)));
+  } else {
+    highlightColor = '#ff4d4d';
+    warTargets(n).forEach(([x, y]) => highlight.add(key(x, y)));
+  }
+  updateUI();
+  draw();
+}
+
+function beginSkillTarget(id) {
+  const n = current;
+  const sk = SKILLS[id];
+  pendingAction = { type: 'skill', id };
+  phase = 'selectTarget';
+  highlight.clear();
+  highlightColor = sk.icon === '☢' || sk.icon === '💥' ? '#ff9f43' : '#ffd166';
+
+  nations.forEach(t => {
+    if (!t.alive || t.id === n.id) return;
+    if (sk.target === 'adjacent' && !adjacentTo(n, t)) return;
+    t.territory.forEach(k => highlight.add(k));
+  });
+
+  if (highlight.size === 0) {
+    log(`没有符合【${sk.name}】条件的目标。`, 'bad');
+    pendingAction = null;
+    phase = 'selectAction';
+    updateUI(); draw();
+    return;
+  }
+  updateUI();
+  draw();
+}
+
+/* =====================================================
+   鼠标交互
+   ===================================================== */
+function cellFromEvent(e) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * sx;
+  const cy = (e.clientY - rect.top) * sy;
+  const x = Math.floor(cx / CELL);
+  const y = Math.floor(cy / CELL);
+  if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return null;
+  return { x, y };
+}
+
+canvas.addEventListener('mousemove', e => {
+  const c = cellFromEvent(e);
+  const changed = (!!c !== !!hoverCell) || (c && hoverCell && (c.x !== hoverCell.x || c.y !== hoverCell.y));
+  if (changed) {
+    hoverCell = c;
+    if (phase === 'selectTarget') draw();
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  if (hoverCell) { hoverCell = null; if (phase === 'selectTarget') draw(); }
+});
+
+canvas.addEventListener('click', e => {
+  if (phase !== 'selectTarget') return;
+  const c = cellFromEvent(e);
+  if (!c) return;
+  const k = key(c.x, c.y);
+  if (!highlight.has(k)) return;
+
+  if (pendingAction === 'expand') doExpand(c.x, c.y);
+  else if (pendingAction === 'war') doWar(c.x, c.y);
+  else if (pendingAction && pendingAction.type === 'skill') {
+    const ownerId = grid[c.y][c.x];
+    if (ownerId === null || ownerId === current.id) return;
+    executeSkill(pendingAction.id, nations[ownerId]);
+  }
+});
+
+/* =====================================================
+   结束
+   ===================================================== */
+function gameOver(winner) {
+  phase = 'over';
+  highlight.clear();
+  draw();
+
+  const ov = document.createElement('div');
+  ov.id = 'overlay';
+  ov.innerHTML = `<div class="box">
+      <h2>${winner ? winner.name + ' 一统天下！' : '天下尽归尘土'}</h2>
+      <button onclick="location.reload()">再 战 一 局</button>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+/* 初始渲染 */
+draw();
+</script>
+</body>
+</html>
